@@ -1,6 +1,6 @@
 import * as Sequelize from 'sequelize';
 const { Model, DataTypes } = Sequelize;
-import { sequelize } from './db';
+import { sequelize } from './db.js';
 
 class VerificationCode extends Model {
   declare id: number;

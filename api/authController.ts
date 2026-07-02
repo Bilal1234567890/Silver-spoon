@@ -2,10 +2,10 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import * as Sequelize from 'sequelize';
 const Op = Sequelize.Op;
-import User from './User';
-import VerificationCode from './VerificationCode';
-import generateCode from './generateCode';
-import { sendVerificationEmail } from './sendEmail';
+import User from './User.js';
+import VerificationCode from './VerificationCode.js';
+import generateCode from './generateCode.js';
+import { sendVerificationEmail } from './sendEmail.js';
 
 export const sendCode = async (req: Request, res: Response, next: NextFunction) => {
   try {

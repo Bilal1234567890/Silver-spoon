@@ -3,9 +3,9 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 dotenv.config();
 
-import { connectDB } from './db';
-import authRoutes from './authRoutes';
-import errorHandler from './errorHandler';
+import { connectDB } from './db.js';
+import authRoutes from './authRoutes.js';
+import errorHandler from './errorHandler.js';
 
 const app: Express = express();
 
