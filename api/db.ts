@@ -1,6 +1,7 @@
+import 'mysql2'; // 👈 force load the driver
 import { Sequelize } from 'sequelize';
 import dotenv from 'dotenv';
-dotenv.config(); // ensure env is loaded early
+dotenv.config();
 
 console.log('🔍 DB_USER:', process.env.DB_USER);
 console.log('🔍 DB_PASSWORD:', process.env.DB_PASSWORD);
