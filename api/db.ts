@@ -3,19 +3,28 @@ import { Sequelize } from 'sequelize';
 import dotenv from 'dotenv';
 dotenv.config();
 
-const dbUrl = process.env.DATABASE_URL || '';
-console.log('🔍 DATABASE_URL:', dbUrl.replace(/:[^:@]*@/, ':****@'));
+console.log('🔍 DB_HOST:', process.env.DB_HOST);
+console.log('🔍 DB_PORT:', process.env.DB_PORT);
+console.log('🔍 DB_USER:', process.env.DB_USER);
+console.log('🔍 DB_NAME:', process.env.DB_NAME);
 
-const sequelize = new Sequelize(dbUrl, {
-  dialect: 'mysql',
-  dialectOptions: {
-    ssl: {
-      rejectUnauthorized: false,
+const sequelize = new Sequelize(
+  process.env.DB_NAME!,
+  process.env.DB_USER!,
+  process.env.DB_PASSWORD!,
+  {
+    host: process.env.DB_HOST,
+    port: parseInt(process.env.DB_PORT || '3306'),
+    dialect: 'mysql',
+    logging: false,
+    dialectOptions: {
+      ssl: {
+        rejectUnauthorized: false,
+      },
+      connectTimeout: 60000,
     },
-    connectTimeout: 60000, // 60 seconds
-  },
-  logging: false,
-});
+  }
+);
 
 export const connectDB = async () => {
   try {
