@@ -1,0 +1,72 @@
+/* ===== 3D Subscription Cards ===== */
+.subscription-container {
+  perspective: 1000px;
+}
+
+.card-3d {
+  transform-style: preserve-3d;
+  transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.card-3d:hover {
+  transform: rotateY(8deg) scale(1.02);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+.card-3d-center:hover {
+  transform: rotateY(0deg) scale(1.05);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+}
+
+.dark .card-3d {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+.dark .card-3d:hover {
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+}
+
+/* ===== Feature Cards 3D + Glowing Border ===== */
+.feature-card-3d {
+  transform-style: preserve-3d;
+  transition: transform 0.4s ease, box-shadow 0.4s ease, border-color 0.3s ease;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.feature-card-3d:hover {
+  transform: perspective(600px) rotateX(3deg) rotateY(6deg) scale(1.02);
+  box-shadow: 0 0 20px 4px rgba(249, 115, 22, 0.3), 0 10px 30px rgba(0,0,0,0.1);
+  border-color: var(--orange);
+}
+.dark .feature-card-3d:hover {
+  box-shadow: 0 0 25px 5px rgba(251, 146, 60, 0.4), 0 10px 30px rgba(0,0,0,0.5);
+}
+
+/* ===== Trust Cards: Fade-up on scroll ===== */
+.trust-card {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+.trust-card.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ===== Footer Logos ===== */
+.footer-logos {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
+  margin-top: 1.5rem;
+}
+.footer-logos img {
+  height: 40px;
+  width: auto;
+}
+.footer-logos .logo-text {
+  font-weight: 700;
+  font-size: 1.2rem;
+  letter-spacing: 0.05em;
+}
