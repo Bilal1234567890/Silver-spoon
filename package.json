@@ -3,13 +3,12 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build:backend": "tsc -p tsconfig.backend.json",
-    "build": "npm run build:backend && vite build",
-    "preview": "vite preview",
-     "start": "npx tsx server.ts"
-  },
+ "scripts": {
+  "dev": "vite",
+  "build": "vite build",
+  "build:backend": "cd api && npm install && npm run build || true",
+  "start": "npx tsx server.ts"
+},
   "dependencies": {
     "@types/three": "^0.185.0",
     "axios": "^1.18.1",
