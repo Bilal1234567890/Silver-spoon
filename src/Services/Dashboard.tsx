@@ -1,15 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { useTheme } from './ThemeContext';
-import backgroundVideo from '../assets/ai.mp4'; // adjust extension if needed
+import backgroundVideo from '../assets/ai.mp4';
 
 const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [currentTime, setCurrentTime] = useState('');
+  const [showBalance, setShowBalance] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Update time every minute
+  // Placeholder user data – will come from DB later
+  const userBalance = 0.00;
+  const userTotalIncome = 0.00;
+  const userTotalOrders = 0;
+
+  // Update time
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
@@ -22,7 +28,7 @@ const Dashboard: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Handle video playback based on theme
+  // Video playback
   useEffect(() => {
     if (!videoRef.current) return;
     if (theme === 'dark') {
@@ -33,9 +39,23 @@ const Dashboard: React.FC = () => {
     }
   }, [theme]);
 
+  // Investment plans data (SILVER SPOON 1 to 10)
+  const plans = [
+    { name: 'SILVER SPOON 1', amount: 3000, dailyEarning: 810, totalEarning: 36450, duration: '45 days' },
+    { name: 'SILVER SPOON 2', amount: 6000, dailyEarning: 1620, totalEarning: 72900, duration: '45 days' },
+    { name: 'SILVER SPOON 3', amount: 10000, dailyEarning: 2700, totalEarning: 121500, duration: '45 days' },
+    { name: 'SILVER SPOON 4', amount: 20000, dailyEarning: 5400, totalEarning: 243000, duration: '45 days' },
+    { name: 'SILVER SPOON 5', amount: 30000, dailyEarning: 8100, totalEarning: 364500, duration: '45 days' },
+    { name: 'SILVER SPOON 6', amount: 50000, dailyEarning: 13500, totalEarning: 607500, duration: '45 days' },
+    { name: 'SILVER SPOON 7', amount: 100000, dailyEarning: 27000, totalEarning: 1215000, duration: '45 days' },
+    { name: 'SILVER SPOON 8', amount: 200000, dailyEarning: 54000, totalEarning: 2430000, duration: '45 days' },
+    { name: 'SILVER SPOON 9', amount: 300000, dailyEarning: 81000, totalEarning: 3645000, duration: '45 days' },
+    { name: 'SILVER SPOON 10', amount: 500000, dailyEarning: 135000, totalEarning: 6075000, duration: '45 days' },
+  ];
+
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-300 pb-20 relative overflow-hidden">
-      {/* Background Video (only in dark mode) */}
+      {/* Background Video */}
       {theme === 'dark' && (
         <video
           ref={videoRef}
@@ -50,7 +70,7 @@ const Dashboard: React.FC = () => {
 
       {/* Main Content */}
       <div className="relative z-10 max-w-md mx-auto px-4 pt-4 pb-24">
-        {/* Header with time, user, theme toggle, logout */}
+        {/* Header */}
         <div className="flex justify-between items-center mb-4">
           <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
             {currentTime}
@@ -59,11 +79,9 @@ const Dashboard: React.FC = () => {
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
               {user?.username || 'User'}
             </span>
-            {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
               className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition text-sm"
-              aria-label="Toggle theme"
             >
               {theme === 'light' ? '🌙' : '☀️'}
             </button>
@@ -76,15 +94,26 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Banner / Hero */}
+        {/* Banner */}
         <div className="bg-gradient-to-r from-orange-500 to-orange-600 dark:from-orange-600 dark:to-orange-700 rounded-xl p-4 mb-4 text-white">
           <h2 className="text-lg font-bold">AI Work for You while sleeping</h2>
         </div>
 
         {/* Balance Card */}
         <div className="bg-white dark:bg-gray-800/90 rounded-xl shadow-lg p-4 mb-4 transition-colors duration-300 backdrop-blur-sm">
-          <p className="text-sm text-gray-500 dark:text-orange-400">Account Balance (₦)</p>
-          <p className="text-3xl font-bold text-gray-900 dark:text-white">170,120.00</p>
+          <div className="flex justify-between items-center">
+            <p className="text-sm text-gray-500 dark:text-orange-400">Account Balance (₦)</p>
+            <button
+              onClick={() => setShowBalance(!showBalance)}
+              className="text-xl text-gray-500 dark:text-gray-400 hover:text-orange transition"
+              aria-label="Toggle balance visibility"
+            >
+              {showBalance ? '👁️' : '🙈'}
+            </button>
+          </div>
+          <p className="text-3xl font-bold text-gray-900 dark:text-white">
+            {showBalance ? userBalance.toFixed(2) : '••••••'}
+          </p>
           <div className="flex justify-between mt-3 gap-2">
             <button className="flex-1 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold py-2 rounded-lg transition">
               Invest
@@ -101,52 +130,50 @@ const Dashboard: React.FC = () => {
         {/* Stats Row */}
         <div className="grid grid-cols-4 gap-2 mb-4">
           <div className="bg-white dark:bg-gray-800/90 rounded-lg shadow p-3 text-center transition-colors duration-300 backdrop-blur-sm">
-            <p className="text-xl font-bold text-gray-900 dark:text-white">1</p>
+            <p className="text-xl font-bold text-gray-900 dark:text-white">{userTotalOrders}</p>
             <p className="text-xs text-gray-500 dark:text-gray-400">Orders</p>
           </div>
           <div className="bg-white dark:bg-gray-800/90 rounded-lg shadow p-3 text-center transition-colors duration-300 backdrop-blur-sm">
-            <p className="text-xl font-bold text-orange-500">₦1,120</p>
+            <p className="text-xl font-bold text-orange-500">₦{userTotalIncome.toFixed(2)}</p>
             <p className="text-xs text-gray-500 dark:text-gray-400">Income</p>
           </div>
           <div className="bg-white dark:bg-gray-800/90 rounded-lg shadow p-3 text-center transition-colors duration-300 backdrop-blur-sm">
             <p className="text-xl font-bold text-gray-900 dark:text-white">0</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Orders</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Referrals</p>
           </div>
           <div className="bg-white dark:bg-gray-800/90 rounded-lg shadow p-3 text-center transition-colors duration-300 backdrop-blur-sm">
             <p className="text-xl font-bold text-gray-900 dark:text-white">0</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Income</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Bonus</p>
           </div>
         </div>
 
-        {/* Featured Products */}
-        <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-3">★ Featured Products</h3>
+        {/* Featured Products / Investment Plans */}
+        <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-3">★ Investment Plans</h3>
 
-        {/* Product Card */}
-        <div className="bg-white dark:bg-gray-800/90 rounded-xl shadow-lg p-4 transition-colors duration-300 backdrop-blur-sm">
-          <div className="flex justify-between items-start">
-            <div>
-              <h4 className="text-lg font-bold text-gray-900 dark:text-white">VIP1</h4>
-              <p className="text-sm text-gray-500 dark:text-gray-400">120 Days Investment Cycle</p>
-            </div>
-            <span className="bg-orange-100 dark:bg-orange-900 text-orange-600 dark:text-orange-300 text-xs font-semibold px-2 py-1 rounded-full">
-              Popular
-            </span>
-          </div>
-
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Daily Income</p>
-              <p className="text-lg font-bold text-orange-500">₦280</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Total Income</p>
-              <p className="text-lg font-bold text-green-600 dark:text-green-400">₦33,695</p>
-            </div>
-          </div>
-
-          <button className="w-full mt-4 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg transition">
-            Buy Now / ₦3,500
-          </button>
+        {/* Plans Table – mobile responsive */}
+        <div className="bg-white dark:bg-gray-800/90 rounded-xl shadow-lg p-3 transition-colors duration-300 backdrop-blur-sm overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-200 dark:border-gray-700">
+                <th className="text-left py-2 px-1 text-gray-700 dark:text-gray-300">Plan</th>
+                <th className="text-left py-2 px-1 text-gray-700 dark:text-gray-300">Amount (₦)</th>
+                <th className="text-left py-2 px-1 text-gray-700 dark:text-gray-300">Daily (₦)</th>
+                <th className="text-left py-2 px-1 text-gray-700 dark:text-gray-300">Total (₦)</th>
+                <th className="text-left py-2 px-1 text-gray-700 dark:text-gray-300">Duration</th>
+              </tr>
+            </thead>
+            <tbody>
+              {plans.map((plan, idx) => (
+                <tr key={idx} className="border-b border-gray-100 dark:border-gray-700/50 last:border-0">
+                  <td className="py-2 px-1 font-semibold text-gray-800 dark:text-gray-200">{plan.name}</td>
+                  <td className="py-2 px-1 text-orange-500 font-medium">{plan.amount.toLocaleString()}</td>
+                  <td className="py-2 px-1 text-gray-600 dark:text-gray-300">{plan.dailyEarning.toLocaleString()}</td>
+                  <td className="py-2 px-1 text-green-600 dark:text-green-400 font-medium">{plan.totalEarning.toLocaleString()}</td>
+                  <td className="py-2 px-1 text-gray-500 dark:text-gray-400 text-xs">{plan.duration}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 

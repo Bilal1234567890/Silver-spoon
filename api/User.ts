@@ -8,6 +8,9 @@ class User extends Model {
   declare email: string;
   declare phone: string;
   declare password: string;
+  declare balance: number;        // new
+  declare totalIncome: number;    // new
+  declare totalOrders: number;    // new
 }
 
 User.init(
@@ -35,6 +38,21 @@ User.init(
     password: {
       type: DataTypes.STRING,
       allowNull: false,
+    },
+    balance: {
+      type: DataTypes.DECIMAL(15, 2),
+      allowNull: false,
+      defaultValue: 0.00,
+    },
+    totalIncome: {
+      type: DataTypes.DECIMAL(15, 2),
+      allowNull: false,
+      defaultValue: 0.00,
+    },
+    totalOrders: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
     },
   },
   {
