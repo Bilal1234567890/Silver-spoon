@@ -1,41 +1,42 @@
 import nodemailer from 'nodemailer';
 
 export const sendVerificationEmail = async (email: string, code: string) => {
-  // Check environment variables
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    throw new Error('EMAIL_USER or EMAIL_PASS is not set in environment variables');
+  const user = process.env.EMAIL_USER;
+  const pass = process.env.EMAIL_PASS;
+
+  if (!user || !pass) {
+    console.error('❌ Missing EMAIL_USER or EMAIL_PASS');
+    throw new Error('Email configuration missing.');
   }
 
-  console.log('📧 Sending email to:', email);
-  console.log('📧 Using EMAIL_USER:', process.env.EMAIL_USER);
+  console.log('📧 Attempting to send email to:', email);
 
-  // Use the simplest Gmail transport
   const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS.trim(),
-    },
-    // Timeouts
-    connectionTimeout: 15000,
-    greetingTimeout: 15000,
-    socketTimeout: 20000,
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false, // TLS
+    auth: { user, pass: pass.trim() },
+    tls: { rejectUnauthorized: false },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
   });
 
   const mailOptions = {
-    from: process.env.EMAIL_USER,
+    from: user,
     to: email,
     subject: 'Your Verification Code',
-    html: `<p>Your verification code is: <b>${code}</b></p><p>It expires in 10 minutes.</p>`,
+    html: `<p>Your code is: <b>${code}</b></p><p>Valid for 10 minutes.</p>`,
   };
 
   try {
     const info = await transporter.sendMail(mailOptions);
-    console.log('✅ Email sent successfully:', info.response);
+    console.log('✅ Email sent:', info.response);
     return info;
   } catch (error: any) {
-    console.error('❌ Email failed – full error:', error);
-    // Throw a clear message
-    throw new Error(`Gmail error: ${error.message || 'Unknown error'}`);
+    console.error('❌ Email error:', error);
+    throw new Error(error.message);
   }
 };
+
+export default sendVerificationEmail;

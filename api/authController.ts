@@ -1,54 +1,75 @@
 import { Request, Response, NextFunction } from 'express';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import * as Sequelize from 'sequelize';
-const Op = Sequelize.Op;
-import User from './User.js';
-import VerificationCode from './VerificationCode.js';
-import generateCode from './generateCode.js';
-import { sendVerificationEmail } from './sendEmail.js';
+import { Op } from 'sequelize';
+import { sequelize } from './db';
+import User from './User';
+import VerificationCode from './VerificationCode';
+import generateCode from './generateCode';
+import sendVerificationEmail from './sendEmail';
 
 export const sendCode = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email, phone } = req.body;
+
     if (!email || !phone) {
       return res.status(400).json({ message: 'Email and phone are required' });
     }
-    const existingEmail = await User.findOne({ where: { email } });
-    if (existingEmail) return res.status(400).json({ message: 'Email already registered' });
-    const existingPhone = await User.findOne({ where: { phone } });
-    if (existingPhone) return res.status(400).json({ message: 'Phone number already registered' });
 
+    // Check duplicates
+    const existingEmail = await User.findOne({ where: { email } });
+    if (existingEmail) {
+      return res.status(400).json({ message: 'Email already registered' });
+    }
+    const existingPhone = await User.findOne({ where: { phone } });
+    if (existingPhone) {
+      return res.status(400).json({ message: 'Phone number already registered' });
+    }
+
+    // Generate and store code
     const code = generateCode();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
     await VerificationCode.destroy({ where: { email } });
     await VerificationCode.create({ email, code, expiresAt });
 
- try {
-  await sendVerificationEmail(email, code);
-} catch (emailError: any) {
-  console.error('📧 Email sending error:', emailError.message);
-  return res.status(500).json({
-    message: 'Failed to send verification email.',
-    error: emailError.message, // 👈 Frontend will show this
-  });
-}
-    res.status(200).json({ message: 'Verification code sent to your email' });
+    // Try to send email
+    try {
+      await sendVerificationEmail(email, code);
+      res.status(200).json({ message: 'Verification code sent to your email' });
+    } catch (emailError: any) {
+      console.error('📧 Email error:', emailError);
+      // Even if email fails, the code is stored
+      res.status(500).json({
+        message: 'Failed to send verification email.',
+        error: emailError.message,
+      });
+    }
   } catch (err: any) {
-    console.error('sendCode error:', err);
-    res.status(500).json({ message: 'Server error while sending code', error: err.message });
+    console.error('❌ sendCode error:', err);
+    res.status(500).json({
+      message: 'Server error while sending code',
+      error: err.message,
+    });
   }
 };
+
+// ... rest of the controller (register, login, getMe)y
 
 export const register = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email, phone, password, code } = req.body;
 
     const record = await VerificationCode.findOne({ where: { email, code } });
-    if (!record) return res.status(400).json({ message: 'Invalid or missing verification code' });
-    if (record.expiresAt < new Date()) return res.status(400).json({ message: 'Verification code expired' });
+    if (!record) {
+      return res.status(400).json({ message: 'Invalid or missing verification code' });
+    }
+    if (record.expiresAt < new Date()) {
+      return res.status(400).json({ message: 'Verification code expired' });
+    }
 
-    // Generate username
-    let username = 'S-S0000investor';
+    // Generate unique username
+    let username = ''; // ✅ FIX 3: Initialized to avoid 'used before assigned' error
     let isUnique = false;
     let attempts = 0;
     const maxAttempts = 10;
@@ -67,17 +88,23 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
       username = `S-S${timestamp}investor`;
     }
 
-    const user = await User.create({ username, email, phone, password });
-    await VerificationCode.destroy({ where: { email, code } });
+    const hashed = await bcrypt.hash(password, 10);
+    const user = await User.create({
+      username,
+      email,
+      phone,
+      password: hashed,
+    });
+
+    await VerificationCode.destroy({ where: { id: record.id } });
 
     const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET!, { expiresIn: '7d' });
 
     res.status(201).json({
       message: 'Registration successful',
       token,
-      username: user.username,
+      user: { id: user.id, username: user.username, email: user.email },
       generatedUsername: user.username,
-      user: { username: user.username },
     });
   } catch (err) {
     next(err);
@@ -88,40 +115,15 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
   try {
     const { identifier, password } = req.body;
 
-    // Trim inputs
-    const trimmedIdentifier = identifier?.trim() || '';
-    const trimmedPassword = password?.trim() || '';
-
-    console.log('🔍 Login attempt with identifier:', trimmedIdentifier);
-    console.log('🔍 Password provided:', trimmedPassword);
-
-    if (!trimmedIdentifier || !trimmedPassword) {
-      return res.status(400).json({ message: 'Identifier and password are required' });
-    }
-
-    // Find user
     const user = await User.findOne({
       where: {
-        [Op.or]: [{ email: trimmedIdentifier }, { username: trimmedIdentifier }],
+        [Op.or]: [{ email: identifier }, { username: identifier }],
       },
     });
+    if (!user) return res.status(401).json({ message: 'Invalid credentials' });
 
-    if (!user) {
-      console.log('❌ No user found with that identifier');
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
-
-    console.log('✅ User found:', { id: user.id, username: user.username, email: user.email });
-    console.log('🔍 Stored password in DB:', user.password);
-    console.log('🔍 Provided password:', trimmedPassword);
-
-    // Compare
-    if (trimmedPassword !== user.password) {
-      console.log('❌ Password mismatch');
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
-
-    console.log('✅ Login successful');
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) return res.status(401).json({ message: 'Invalid credentials' });
 
     const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET!, { expiresIn: '7d' });
     res.json({ token, user: { id: user.id, username: user.username, email: user.email } });
