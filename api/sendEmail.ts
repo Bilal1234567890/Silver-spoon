@@ -1,25 +1,25 @@
 import nodemailer from 'nodemailer';
 
 export const sendVerificationEmail = async (email: string, code: string) => {
-  console.log('📧 Attempting to send email to:', email);
-  console.log('📧 EMAIL_USER:', process.env.EMAIL_USER);
-  console.log('📧 EMAIL_PASS length:', process.env.EMAIL_PASS?.trim().length || 0);
+  // Check environment variables
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    throw new Error('EMAIL_USER or EMAIL_PASS is not set in environment variables');
+  }
 
-  // Use explicit SMTP with TLS (port 587) – more reliable on Railway
+  console.log('📧 Sending email to:', email);
+  console.log('📧 Using EMAIL_USER:', process.env.EMAIL_USER);
+
+  // Use the simplest Gmail transport
   const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false, // TLS
+    service: 'gmail',
     auth: {
       user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS?.trim() || '',
+      pass: process.env.EMAIL_PASS.trim(),
     },
-    tls: {
-      rejectUnauthorized: false,
-    },
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 15000,
+    // Timeouts
+    connectionTimeout: 15000,
+    greetingTimeout: 15000,
+    socketTimeout: 20000,
   });
 
   const mailOptions = {
@@ -34,13 +34,8 @@ export const sendVerificationEmail = async (email: string, code: string) => {
     console.log('✅ Email sent successfully:', info.response);
     return info;
   } catch (error: any) {
-    console.error('❌ Nodemailer error details:', {
-      code: error.code,
-      command: error.command,
-      response: error.response,
-      responseCode: error.responseCode,
-      stack: error.stack,
-    });
-    throw new Error(`Email sending failed: ${error.message}`);
+    console.error('❌ Email failed – full error:', error);
+    // Throw a clear message
+    throw new Error(`Gmail error: ${error.message || 'Unknown error'}`);
   }
 };
