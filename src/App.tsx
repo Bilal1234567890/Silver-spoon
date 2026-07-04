@@ -6,6 +6,7 @@ import HomePage from './Services/HomePage';
 import RegistrationForm from './Services/RegistrationForm';
 import LoginForm from './Services/LoginForm';
 import Dashboard from './Services/Dashboard';
+import ForgotPassword from './Services/ForgotPassword';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
@@ -27,6 +28,7 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/register" element={<RegistrationForm />} />
             <Route path="/login" element={<LoginForm />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route
               path="/dashboard"
               element={

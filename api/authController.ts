@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from 'express';
-import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { Op } from 'sequelize';
 import { sequelize } from './db';
@@ -16,7 +15,6 @@ export const sendCode = async (req: Request, res: Response, next: NextFunction) 
       return res.status(400).json({ message: 'Email and phone are required' });
     }
 
-    // Check duplicates
     const existingEmail = await User.findOne({ where: { email } });
     if (existingEmail) {
       return res.status(400).json({ message: 'Email already registered' });
@@ -26,20 +24,17 @@ export const sendCode = async (req: Request, res: Response, next: NextFunction) 
       return res.status(400).json({ message: 'Phone number already registered' });
     }
 
-    // Generate and store code
     const code = generateCode();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
     await VerificationCode.destroy({ where: { email } });
     await VerificationCode.create({ email, code, expiresAt });
 
-    // Try to send email
     try {
       await sendVerificationEmail(email, code);
       res.status(200).json({ message: 'Verification code sent to your email' });
     } catch (emailError: any) {
       console.error('📧 Email error:', emailError);
-      // Even if email fails, the code is stored
       res.status(500).json({
         message: 'Failed to send verification email.',
         error: emailError.message,
@@ -54,8 +49,6 @@ export const sendCode = async (req: Request, res: Response, next: NextFunction) 
   }
 };
 
-// ... rest of the controller (register, login, getMe)y
-
 export const register = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email, phone, password, code } = req.body;
@@ -69,7 +62,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     }
 
     // Generate unique username
-    let username = ''; // ✅ FIX 3: Initialized to avoid 'used before assigned' error
+    let username = '';
     let isUnique = false;
     let attempts = 0;
     const maxAttempts = 10;
@@ -88,12 +81,14 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
       username = `S-S${timestamp}investor`;
     }
 
-    const hashed = await bcrypt.hash(password, 10);
+    // ✅ Store password as plain text (no hashing)
+    const plainPassword = password;
+
     const user = await User.create({
       username,
       email,
       phone,
-      password: hashed,
+      password: plainPassword,
     });
 
     await VerificationCode.destroy({ where: { id: record.id } });
@@ -114,16 +109,26 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
 export const login = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { identifier, password } = req.body;
+    const trimmedIdentifier = identifier?.trim() || '';
+    const trimmedPassword = password?.trim() || '';
+
+    if (!trimmedIdentifier || !trimmedPassword) {
+      return res.status(400).json({ message: 'Identifier and password are required' });
+    }
 
     const user = await User.findOne({
       where: {
-        [Op.or]: [{ email: identifier }, { username: identifier }],
+        [Op.or]: [{ email: trimmedIdentifier }, { username: trimmedIdentifier }],
       },
     });
-    if (!user) return res.status(401).json({ message: 'Invalid credentials' });
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
 
-    const valid = await bcrypt.compare(password, user.password);
-    if (!valid) return res.status(401).json({ message: 'Invalid credentials' });
+    // ✅ Plain‑text comparison (no bcrypt)
+    if (trimmedPassword !== user.password) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
 
     const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET!, { expiresIn: '7d' });
     res.json({ token, user: { id: user.id, username: user.username, email: user.email } });
@@ -139,5 +144,67 @@ export const getMe = async (req: Request, res: Response, next: NextFunction) => 
     res.json(user);
   } catch (err) {
     next(err);
+  }
+};
+
+// Forgot Password – send verification code
+export const forgotPassword = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      return res.status(404).json({ message: 'Email does not exist' });
+    }
+
+    const code = generateCode();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    await VerificationCode.destroy({ where: { email } });
+    await VerificationCode.create({ email, code, expiresAt });
+
+    await sendVerificationEmail(email, code);
+
+    res.status(200).json({ message: 'Verification code sent to your email' });
+  } catch (err: any) {
+    console.error('forgotPassword error:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+// Reset Password – verify code and update password (plain text)
+export const resetPassword = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { email, code, newPassword } = req.body;
+    if (!email || !code || !newPassword) {
+      return res.status(400).json({ message: 'Email, code, and new password are required' });
+    }
+
+    const record = await VerificationCode.findOne({ where: { email, code } });
+    if (!record) {
+      return res.status(400).json({ message: 'Invalid or missing verification code' });
+    }
+    if (record.expiresAt < new Date()) {
+      return res.status(400).json({ message: 'Verification code expired' });
+    }
+
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Update password (plain text – no hashing)
+    user.password = newPassword;
+    await user.save();
+
+    await VerificationCode.destroy({ where: { email, code } });
+
+    res.status(200).json({ message: 'Password changed successfully' });
+  } catch (err: any) {
+    console.error('resetPassword error:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
   }
 };

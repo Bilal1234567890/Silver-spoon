@@ -15,6 +15,8 @@ interface AuthContextType {
   login: (identifier: string, password: string) => Promise<void>;
   register: (userData: any) => Promise<any>;
   sendCode: (email: string, phone: string) => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
+  resetPassword: (email: string, code: string, newPassword: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -35,14 +37,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   const login = async (identifier: string, password: string) => {
-    // Trim inputs to prevent accidental spaces
     const trimmedIdentifier = identifier.trim();
     const trimmedPassword = password.trim();
-
-    const res = await api.post('/auth/login', { 
-      identifier: trimmedIdentifier, 
-      password: trimmedPassword 
-    });
+    const res = await api.post('/auth/login', { identifier: trimmedIdentifier, password: trimmedPassword });
     localStorage.setItem('token', res.data.token);
     setUser(res.data.user);
     navigate('/dashboard');
@@ -59,6 +56,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     await api.post('/auth/send-code', { email, phone });
   };
 
+  const forgotPassword = async (email: string) => {
+    await api.post('/auth/forgot-password', { email });
+  };
+
+  const resetPassword = async (email: string, code: string, newPassword: string) => {
+    await api.post('/auth/reset-password', { email, code, newPassword });
+  };
+
   const logout = () => {
     localStorage.removeItem('token');
     setUser(null);
@@ -66,7 +71,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, sendCode, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, sendCode, forgotPassword, resetPassword, logout }}>
       {children}
     </AuthContext.Provider>
   );
