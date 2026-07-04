@@ -1,19 +1,20 @@
 import nodemailer from 'nodemailer';
 
 export const sendVerificationEmail = async (email: string, code: string) => {
-  // Debug: log the credentials (without revealing the full password)
+  console.log('📧 Attempting to send email to:', email);
   console.log('📧 EMAIL_USER:', process.env.EMAIL_USER);
-  console.log('📧 EMAIL_PASS length:', process.env.EMAIL_PASS?.length);
+  console.log('📧 EMAIL_PASS length:', process.env.EMAIL_PASS?.length || 0);
 
-  // Explicit SMTP config (more reliable on Railway)
   const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true, // SSL
+    service: 'gmail',
     auth: {
       user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
+      pass: process.env.EMAIL_PASS?.trim() || '', // trim any accidental spaces
     },
+    // Timeout settings (in milliseconds)
+    connectionTimeout: 10000, // 10 seconds
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
   });
 
   const mailOptions = {
@@ -29,7 +30,7 @@ export const sendVerificationEmail = async (email: string, code: string) => {
     return info;
   } catch (error: any) {
     console.error('❌ Nodemailer error:', error);
-    // Throw a detailed error to the frontend
-    throw new Error(`Failed to send email: ${error.message}`);
+    // Throw a detailed error (will be caught in authController)
+    throw new Error(error.message || 'Failed to send email');
   }
 };
