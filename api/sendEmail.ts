@@ -3,16 +3,21 @@ import nodemailer from 'nodemailer';
 export const sendVerificationEmail = async (email: string, code: string) => {
   console.log('📧 Attempting to send email to:', email);
   console.log('📧 EMAIL_USER:', process.env.EMAIL_USER);
-  console.log('📧 EMAIL_PASS length:', process.env.EMAIL_PASS?.length || 0);
+  console.log('📧 EMAIL_PASS length:', process.env.EMAIL_PASS?.trim().length || 0);
 
+  // Use explicit SMTP with TLS (port 587) – more reliable on Railway
   const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false, // TLS
     auth: {
       user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS?.trim() || '', // trim any accidental spaces
+      pass: process.env.EMAIL_PASS?.trim() || '',
     },
-    // Timeout settings (in milliseconds)
-    connectionTimeout: 10000, // 10 seconds
+    tls: {
+      rejectUnauthorized: false,
+    },
+    connectionTimeout: 10000,
     greetingTimeout: 10000,
     socketTimeout: 15000,
   });
@@ -29,8 +34,13 @@ export const sendVerificationEmail = async (email: string, code: string) => {
     console.log('✅ Email sent successfully:', info.response);
     return info;
   } catch (error: any) {
-    console.error('❌ Nodemailer error:', error);
-    // Throw a detailed error (will be caught in authController)
-    throw new Error(error.message || 'Failed to send email');
+    console.error('❌ Nodemailer error details:', {
+      code: error.code,
+      command: error.command,
+      response: error.response,
+      responseCode: error.responseCode,
+      stack: error.stack,
+    });
+    throw new Error(`Email sending failed: ${error.message}`);
   }
 };

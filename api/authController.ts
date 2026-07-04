@@ -26,11 +26,10 @@ export const sendCode = async (req: Request, res: Response, next: NextFunction) 
   try {
   await sendVerificationEmail(email, code);
 } catch (emailError: any) {
-  console.error('Email sending failed:', emailError);
-  // Return the actual error message to the frontend for debugging
+  console.error('📧 Email sending error captured:', emailError.message);
   return res.status(500).json({
     message: 'Failed to send verification email.',
-    error: emailError.message, // ← now you'll see the real reason
+    error: emailError.message, // now frontend will see the real error
   });
 }
     res.status(200).json({ message: 'Verification code sent to your email' });
