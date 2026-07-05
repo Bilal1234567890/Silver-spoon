@@ -1,5 +1,4 @@
 import express, { Express } from 'express';
-import cors from 'cors';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -11,28 +10,22 @@ import errorHandler from './errorHandler.js';
 
 const app: Express = express();
 
-// ✅ CORS – allow all origins (explicit headers)
+// ✅ CORS – MUST be first
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') {
-    console.log('🔄 OPTIONS request received for:', req.url);
+    console.log('🔄 OPTIONS request:', req.url);
     return res.sendStatus(204);
   }
   next();
 });
 
-// ✅ Connect to database (non-blocking, logs errors but doesn't crash)
+// ✅ Connect to DB (non‑blocking, logs error but doesn't crash)
 connectDB()
-  .then(() => {
-    console.log('✅ Database connected and synced');
-  })
-  .catch((err) => {
-    console.error('❌ Database connection failed (will continue):', err.message);
-    // We don't exit the process – the app will still run,
-    // but endpoints that need DB will fail.
-  });
+  .then(() => console.log('✅ Database connected and synced'))
+  .catch((err) => console.error('❌ DB connection error:', err.message));
 
 app.use(express.json());
 

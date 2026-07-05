@@ -3,20 +3,20 @@ dotenv.config();
 
 console.log('🚀 Starting server...');
 
-import app from './api/index.js';
+try {
+  const appModule = await import('./api/index.js');
+  const app = appModule.default;
+  const PORT = process.env.PORT || 5000;
 
-const PORT = process.env.PORT || 5000;
+  const server = app.listen(PORT, () => {
+    console.log(`✅ Server is running on port ${PORT}`);
+  });
 
-// Start the server
-const server = app.listen(PORT, () => {
-  console.log(`✅ Server is running on port ${PORT}`);
-}).on('error', (err) => {
-  console.error('❌ Server error:', err);
+  server.on('error', (err) => {
+    console.error('❌ Server error:', err);
+    process.exit(1);
+  });
+} catch (err) {
+  console.error('❌ Failed to start server:', err);
   process.exit(1);
-});
-
-// Handle shutdown gracefully
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received, closing server...');
-  server.close(() => process.exit(0));
-});
+}
