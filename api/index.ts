@@ -11,14 +11,14 @@ import errorHandler from './errorHandler.js';
 
 const app: Express = express();
 
-// ============ CORS – MUST BE FIRST ============
+// ✅ CORS – allow all origins
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-// Explicitly handle OPTIONS for all routes
+// ✅ Explicit OPTIONS handler
 app.options('*', (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -26,15 +26,13 @@ app.options('*', (req, res) => {
   res.sendStatus(204);
 });
 
-// ============ Database (non‑blocking) ============
+// ✅ Database – non‑blocking, logs errors but doesn't crash
 connectDB()
   .then(() => console.log('✅ Database connected and synced'))
   .catch((err) => console.error('❌ DB connection error:', err.message));
 
-// ============ Middleware ============
 app.use(express.json());
 
-// ============ Routes ============
 app.use('/api/auth', authRoutes);
 
 app.get('/api/health', (req, res) => {
