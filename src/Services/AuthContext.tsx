@@ -7,6 +7,7 @@ interface User {
   id: number;
   username: string;
   email: string;
+  phone: string;
   balance: number;
   totalIncome: number;
   totalOrders: number;
@@ -14,6 +15,11 @@ interface User {
   invest: number;
   orders: number;
   referrals: number;
+  // New bank details
+  profilePicture: string | null;
+  accountNumber: string | null;
+  accountName: string | null;
+  bankName: string | null;
 }
 
 interface AuthContextType {

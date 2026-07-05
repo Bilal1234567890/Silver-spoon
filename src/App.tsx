@@ -7,15 +7,12 @@ import RegistrationForm from './Services/RegistrationForm';
 import LoginForm from './Services/LoginForm';
 import Dashboard from './Services/Dashboard';
 import ForgotPassword from './Services/ForgotPassword';
+import Mine from './Services/Mine';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
-  console.log('🔒 ProtectedRoute: user=', user, 'loading=', loading);
   if (loading) return <div className="text-center mt-10">Loading...</div>;
-  if (!user) {
-    console.log('🔒 No user, redirecting to /login');
-    return <Navigate to="/login" />;
-  }
+  if (!user) return <Navigate to="/login" />;
   return <>{children}</>;
 };
 
@@ -38,6 +35,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/mine"
+              element={
+                <ProtectedRoute>
+                  <Mine />
                 </ProtectedRoute>
               }
             />

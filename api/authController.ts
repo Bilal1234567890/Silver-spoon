@@ -257,3 +257,82 @@ export const verifyReferral = async (req: Request, res: Response, next: NextFunc
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
+
+
+// UPDATE BANK DETAILS
+export const updateBankDetails = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { accountNumber, accountName, bankName } = req.body;
+    const userId = req.userId;
+
+    if (!accountNumber || !accountName || !bankName) {
+      return res.status(400).json({ message: 'All bank details are required' });
+    }
+
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    user.accountNumber = accountNumber.trim();
+    user.accountName = accountName.trim();
+    user.bankName = bankName.trim();
+    await user.save();
+
+    res.json({ message: 'Bank details updated successfully', user });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// WITHDRAWAL REQUEST
+export const requestWithdrawal = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { amount } = req.body;
+    const userId = req.userId;
+
+    // Check minimum
+    if (!amount || amount < 9000) {
+      return res.status(400).json({ message: 'Minimum withdrawal amount is ₦9,000' });
+    }
+
+    // Check if the user has bank details
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    if (!user.accountNumber || !user.accountName || !user.bankName) {
+      return res.status(400).json({ message: 'Please add your bank details first' });
+    }
+
+    // Check if balance is sufficient
+    if (user.balance < amount) {
+      return res.status(400).json({ message: 'Insufficient balance' });
+    }
+
+    // Check time and day
+    const now = new Date();
+    const day = now.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+
+    // No withdrawal on weekends
+    if (day === 0 || day === 6) {
+      return res.status(400).json({ message: 'Withdrawals are not allowed on weekends (Saturday & Sunday)' });
+    }
+
+    // No withdrawal outside 10:00 AM - 6:00 PM
+    if (hours < 10 || (hours === 18 && minutes > 0) || hours > 18) {
+      return res.status(400).json({ message: 'Withdrawals are only processed Monday to Friday, 10:00 AM - 6:00 PM' });
+    }
+
+    // Deduct balance (simulate withdrawal)
+    user.balance = Number(user.balance) - Number(amount);
+    await user.save();
+
+    // Here you would create a withdrawal transaction record (optional)
+    res.json({ message: `Withdrawal of ₦${amount} processed successfully`, newBalance: user.balance });
+  } catch (err) {
+    next(err);
+  }
+};

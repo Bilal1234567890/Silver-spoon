@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { useTheme } from './ThemeContext';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../Services/api';
 import backgroundVideo from '../assets/ai.mp4';
 
 const Dashboard: React.FC = () => {
   const { user, loading, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const navigate = useNavigate();
   const [currentTime, setCurrentTime] = useState('');
   const [showBalance, setShowBalance] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -20,13 +22,18 @@ const Dashboard: React.FC = () => {
   const [isVerifying, setIsVerifying] = useState(false);
   const [newBalance, setNewBalance] = useState<number | null>(null);
 
-  // Safe number conversion
+  // Withdrawal modal state
+  const [showWithdraw, setShowWithdraw] = useState(false);
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [withdrawError, setWithdrawError] = useState('');
+  const [withdrawSuccess, setWithdrawSuccess] = useState('');
+
   const safeNumber = (value: any): number => {
     const num = parseFloat(value);
     return isNaN(num) ? 0 : num;
   };
 
-  // ✅ Safe announcement check
+  // Safe announcement check
   useEffect(() => {
     if (loading) return;
     try {
@@ -105,6 +112,39 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const handleWithdraw = () => {
+    if (!user?.accountNumber || !user?.accountName || !user?.bankName) {
+      navigate('/mine');
+      return;
+    }
+    setShowWithdraw(true);
+  };
+
+  const handleWithdrawSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setWithdrawError('');
+    setWithdrawSuccess('');
+    try {
+      const amount = parseFloat(withdrawAmount);
+      if (isNaN(amount) || amount < 9000) {
+        setWithdrawError('Minimum withdrawal is ₦9,000');
+        return;
+      }
+      const res = await api.post('/auth/withdraw', { amount });
+      setWithdrawSuccess(res.data.message);
+      if (user) {
+        user.balance = res.data.newBalance;
+      }
+      setTimeout(() => {
+        setShowWithdraw(false);
+        setWithdrawAmount('');
+        window.location.reload();
+      }, 2000);
+    } catch (err: any) {
+      setWithdrawError(err.response?.data?.message || 'Withdrawal failed');
+    }
+  };
+
   // Investment plans data
   const plans = [
     { name: 'SILVER SPOON 1', amount: 3000, dailyEarning: 810, totalEarning: 36450, duration: '45 days' },
@@ -119,7 +159,6 @@ const Dashboard: React.FC = () => {
     { name: 'SILVER SPOON 10', amount: 500000, dailyEarning: 135000, totalEarning: 6075000, duration: '45 days' },
   ];
 
-  // Safe display for numeric fields
   const displayBalance = safeNumber(user?.balance);
   const displayInvest = safeNumber(user?.invest);
   const displayOrders = user?.orders || 0;
@@ -159,20 +198,19 @@ const Dashboard: React.FC = () => {
             {currentTime}
           </span>
           <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              {user?.username || 'User'}
-            </span>
+            <Link to="/mine" className="flex items-center gap-2 hover:opacity-80 transition">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {user?.username || 'User'}
+              </span>
+              <div className="w-8 h-8 rounded-full bg-orange-200 dark:bg-gray-700 flex items-center justify-center text-sm font-bold text-gray-700 dark:text-gray-200">
+                {user?.username?.charAt(0).toUpperCase() || 'U'}
+              </div>
+            </Link>
             <button
               onClick={toggleTheme}
               className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition text-sm"
             >
               {theme === 'light' ? '🌙' : '☀️'}
-            </button>
-            <button
-              onClick={logout}
-              className="text-xs bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition"
-            >
-              Logout
             </button>
           </div>
         </div>
@@ -201,7 +239,10 @@ const Dashboard: React.FC = () => {
             <button className="flex-1 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold py-2 rounded-lg transition">
               Invest
             </button>
-            <button className="flex-1 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold py-2 rounded-lg transition">
+            <button
+              onClick={handleWithdraw}
+              className="flex-1 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold py-2 rounded-lg transition"
+            >
               Withdraw
             </button>
             <button className="flex-1 bg-purple-500 hover:bg-purple-600 text-white text-sm font-semibold py-2 rounded-lg transition">
@@ -325,13 +366,58 @@ const Dashboard: React.FC = () => {
         </div>
       )}
 
+      {/* Withdrawal Modal */}
+      {showWithdraw && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 max-w-md w-full rounded-2xl shadow-2xl p-6 text-center transform transition-all">
+            <h3 className="text-xl font-bold font-fraunces text-gray-800 dark:text-gray-100 mb-3">
+              💰 Withdraw Funds
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+              Minimum withdrawal: <strong>₦9,000</strong>
+            </p>
+            {withdrawError && <div className="bg-red-100 text-red-700 p-2 rounded mb-4">{withdrawError}</div>}
+            {withdrawSuccess && <div className="bg-green-100 text-green-700 p-2 rounded mb-4">{withdrawSuccess}</div>}
+            <form onSubmit={handleWithdrawSubmit}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Amount (₦)
+                </label>
+                <input
+                  type="number"
+                  value={withdrawAmount}
+                  onChange={(e) => setWithdrawAmount(e.target.value)}
+                  min="9000"
+                  step="100"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-orange"
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg transition"
+              >
+                Withdraw
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowWithdraw(false)}
+                className="w-full mt-2 text-gray-500 hover:text-gray-700 text-sm"
+              >
+                Cancel
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800/90 border-t border-gray-200 dark:border-gray-700 transition-colors duration-300 backdrop-blur-sm">
         <div className="max-w-md mx-auto flex justify-around py-2">
-          <button className="flex flex-col items-center text-orange-500">
+          <Link to="/dashboard" className="flex flex-col items-center text-orange-500">
             <span className="text-xl">🏠</span>
             <span className="text-xs">Home</span>
-          </button>
+          </Link>
           <button className="flex flex-col items-center text-gray-500 dark:text-gray-400 hover:text-orange-500 transition">
             <span className="text-xl">📋</span>
             <span className="text-xs">Orders</span>
@@ -344,10 +430,10 @@ const Dashboard: React.FC = () => {
             <span className="text-xl">📝</span>
             <span className="text-xs">Task</span>
           </button>
-          <button className="flex flex-col items-center text-gray-500 dark:text-gray-400 hover:text-orange-500 transition">
+          <Link to="/mine" className="flex flex-col items-center text-gray-500 dark:text-gray-400 hover:text-orange-500 transition">
             <span className="text-xl">👤</span>
             <span className="text-xs">Mine</span>
-          </button>
+          </Link>
         </div>
       </div>
     </div>

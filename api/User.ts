@@ -11,10 +11,15 @@ class User extends Model {
   declare balance: number;
   declare totalIncome: number;
   declare totalOrders: number;
-  declare bonus: string | null;      // 'used' or null
-  declare invest: number;            // total amount invested
-  declare orders: number;            // number of orders
-  declare referrals: number;         // number of referrals
+  declare bonus: string | null;
+  declare invest: number;
+  declare orders: number;
+  declare referrals: number;
+  // NEW fields
+  declare profilePicture: string | null;
+  declare accountNumber: string | null;
+  declare accountName: string | null;
+  declare bankName: string | null;
 }
 
 User.init(
@@ -77,6 +82,27 @@ User.init(
       type: DataTypes.INTEGER,
       allowNull: false,
       defaultValue: 0,
+    },
+    // New columns
+    profilePicture: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: null,
+    },
+    accountNumber: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: null,
+    },
+    accountName: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: null,
+    },
+    bankName: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: null,
     },
   },
   {
