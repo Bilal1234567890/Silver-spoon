@@ -3,7 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 dotenv.config();
 
-console.log('🔍 Initializing backend...');
+console.log('📦 Loading backend modules...');
 
 import { connectDB } from './db.js';
 import authRoutes from './authRoutes.js';
@@ -11,22 +11,26 @@ import errorHandler from './errorHandler.js';
 
 const app: Express = express();
 
-// ✅ Explicit CORS middleware before everything
+// ✅ CORS – allow all origins
 app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') {
     return res.sendStatus(204);
   }
   next();
 });
 
-console.log('🔍 Connecting to database...');
-connectDB().catch((err) => {
-  console.error('❌ Database connection error:', err);
+// ✅ Connect to database and handle errors
+try {
+  console.log('🔌 Connecting to database...');
+  await connectDB();
+  console.log('✅ Database connected and synced');
+} catch (err) {
+  console.error('❌ Database connection failed:', err);
   process.exit(1);
-});
+}
 
 app.use(express.json());
 
@@ -37,7 +41,5 @@ app.get('/api/health', (req, res) => {
 });
 
 app.use(errorHandler);
-
-console.log('✅ Backend initialized');
 
 export default app;
