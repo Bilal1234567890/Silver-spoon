@@ -292,8 +292,8 @@ export const requestWithdrawal = async (req: Request, res: Response, next: NextF
     const userId = req.userId;
 
     // Check minimum
-    if (!amount || amount < 9000) {
-      return res.status(400).json({ message: 'Minimum withdrawal amount is ₦9,000' });
+    if (!amount || amount < 2000) {
+      return res.status(400).json({ message: 'Minimum withdrawal amount is ₦2,000' });
     }
 
     // Check if the user has bank details
