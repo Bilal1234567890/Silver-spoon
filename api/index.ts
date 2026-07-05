@@ -9,26 +9,35 @@ import errorHandler from './errorHandler.js';
 
 const app: Express = express();
 
-// ✅ SIMPLEST CORS: allow any origin
+// ✅ Connect to database BEFORE routes
+connectDB();
+
+// ✅ CORS middleware – allow all origins
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-// ✅ Explicitly handle OPTIONS for all routes
-app.options('*', cors());
+// ✅ Explicitly handle OPTIONS requests for all routes
+app.options('*', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.sendStatus(204);
+});
 
-connectDB();
-
+// ✅ Parse JSON after CORS
 app.use(express.json());
 
+// ✅ Routes
 app.use('/api/auth', authRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
+// ✅ Error handler
 app.use(errorHandler);
 
 export default app;
