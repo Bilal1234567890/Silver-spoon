@@ -18,8 +18,12 @@
       "dest": "api/index.ts"
     },
     {
+      "src": "/[^/]+\\.[^/]+$",
+      "dest": "dist/$0"
+    },
+    {
       "src": "/(.*)",
-      "dest": "dist/$1"
+      "dest": "dist/index.html"
     }
   ]
 }
