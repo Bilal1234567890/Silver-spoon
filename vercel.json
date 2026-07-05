@@ -1,10 +1,6 @@
 {
   "builds": [
     {
-      "src": "api/index.ts",
-      "use": "@vercel/node"
-    },
-    {
       "src": "package.json",
       "use": "@vercel/static-build",
       "config": {
@@ -13,7 +9,13 @@
     }
   ],
   "routes": [
-      { "src": "/[^/]+\\.[^/]+$", "dest": "/$0" },
-      { "src": "/(.*)", "dest": "/index.html" }
+    {
+      "src": "/[^/]+\\.[^/]+$",
+      "dest": "/$0"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
   ]
 }
