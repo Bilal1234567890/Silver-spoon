@@ -7,6 +7,13 @@ interface User {
   id: number;
   username: string;
   email: string;
+  balance: number;
+  totalIncome: number;
+  totalOrders: number;
+  bonus: string | null;
+  invest: number;
+  orders: number;
+  referrals: number;
 }
 
 interface AuthContextType {

@@ -8,9 +8,13 @@ class User extends Model {
   declare email: string;
   declare phone: string;
   declare password: string;
-  declare balance: number;        // new
-  declare totalIncome: number;    // new
-  declare totalOrders: number;    // new
+  declare balance: number;
+  declare totalIncome: number;
+  declare totalOrders: number;
+  declare bonus: string | null;      // 'used' or null
+  declare invest: number;            // total amount invested
+  declare orders: number;            // number of orders
+  declare referrals: number;         // number of referrals
 }
 
 User.init(
@@ -50,6 +54,26 @@ User.init(
       defaultValue: 0.00,
     },
     totalOrders: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+    },
+    bonus: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: null,
+    },
+    invest: {
+      type: DataTypes.DECIMAL(15, 2),
+      allowNull: false,
+      defaultValue: 0.00,
+    },
+    orders: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+    },
+    referrals: {
       type: DataTypes.INTEGER,
       allowNull: false,
       defaultValue: 0,

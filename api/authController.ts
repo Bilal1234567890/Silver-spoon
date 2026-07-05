@@ -139,7 +139,9 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
 
 export const getMe = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const user = await User.findByPk(req.userId, { attributes: { exclude: ['password'] } });
+    const user = await User.findByPk(req.userId, {
+      attributes: { exclude: ['password'] },
+    });
     if (!user) return res.status(404).json({ message: 'User not found' });
     res.json(user);
   } catch (err) {
@@ -205,6 +207,53 @@ export const resetPassword = async (req: Request, res: Response, next: NextFunct
     res.status(200).json({ message: 'Password changed successfully' });
   } catch (err: any) {
     console.error('resetPassword error:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+// ✅ NEW: Verify referral code
+export const verifyReferral = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { referralCode } = req.body; // username
+    const userId = req.userId;
+
+    if (!referralCode) {
+      return res.status(400).json({ message: 'Referral code (username) is required' });
+    }
+
+    const currentUser = await User.findByPk(userId);
+    if (!currentUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (currentUser.bonus === 'used') {
+      return res.status(400).json({ message: 'You have already used a referral code' });
+    }
+
+    const referredUser = await User.findOne({ where: { username: referralCode.trim() } });
+    if (!referredUser) {
+      return res.status(404).json({ message: 'Invalid referral code' });
+    }
+
+    if (referredUser.id === userId) {
+      return res.status(400).json({ message: 'You cannot refer yourself' });
+    }
+
+    // Update current user
+    currentUser.balance = parseFloat(currentUser.balance.toString()) + 1500;
+    currentUser.bonus = 'used';
+    await currentUser.save();
+
+    // Increment referred user's referrals count
+    referredUser.referrals = (referredUser.referrals || 0) + 1;
+    await referredUser.save();
+
+    res.status(200).json({
+      message: 'Verification successful! You have won ₦1500!',
+      newBalance: currentUser.balance,
+    });
+  } catch (err: any) {
+    console.error('verifyReferral error:', err);
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };

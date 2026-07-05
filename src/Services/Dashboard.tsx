@@ -1,19 +1,47 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { useTheme } from './ThemeContext';
+import api from '../Services/api';
 import backgroundVideo from '../assets/ai.mp4';
 
 const Dashboard: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, loading, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [currentTime, setCurrentTime] = useState('');
   const [showBalance, setShowBalance] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Placeholder user data – will come from DB later
-  const userBalance = 0.00;
-  const userTotalIncome = 0.00;
-  const userTotalOrders = 0;
+  // Announcement state
+  const [showAnnouncement, setShowAnnouncement] = useState(false);
+  const [announcementStep, setAnnouncementStep] = useState(0);
+  const [referralCode, setReferralCode] = useState('');
+  const [referralError, setReferralError] = useState('');
+  const [referralSuccess, setReferralSuccess] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [newBalance, setNewBalance] = useState<number | null>(null);
+
+  // Safe number conversion
+  const safeNumber = (value: any): number => {
+    const num = parseFloat(value);
+    return isNaN(num) ? 0 : num;
+  };
+
+  // ✅ Safe announcement check
+  useEffect(() => {
+    if (loading) return;
+    try {
+      if (!user || user.bonus === 'used') {
+        setShowAnnouncement(false);
+        setAnnouncementStep(2);
+      } else {
+        setShowAnnouncement(true);
+        setAnnouncementStep(0);
+      }
+    } catch (err) {
+      console.error('Announcement error:', err);
+      setShowAnnouncement(false);
+    }
+  }, [user, loading]);
 
   // Update time
   useEffect(() => {
@@ -39,7 +67,45 @@ const Dashboard: React.FC = () => {
     }
   }, [theme]);
 
-  // Investment plans data (SILVER SPOON 1 to 10)
+  const handleNext = () => {
+    if (announcementStep === 0) {
+      setAnnouncementStep(1);
+    }
+  };
+
+  const handleCancel = () => {
+    setShowAnnouncement(false);
+    setAnnouncementStep(2);
+  };
+
+  const handleVerifyReferral = async () => {
+    if (!referralCode.trim()) {
+      setReferralError('Please enter a referral code (username)');
+      return;
+    }
+    setIsVerifying(true);
+    setReferralError('');
+    setReferralSuccess('');
+    try {
+      const res = await api.post('/auth/verify-referral', { referralCode: referralCode.trim() });
+      const userRes = await api.get('/auth/me');
+      setNewBalance(safeNumber(userRes.data.balance));
+      setReferralSuccess(res.data.message);
+      setShowAnnouncement(false);
+      setAnnouncementStep(2);
+      if (user) {
+        user.balance = userRes.data.balance;
+        user.bonus = userRes.data.bonus;
+      }
+      setReferralCode('');
+    } catch (err: any) {
+      setReferralError(err.response?.data?.message || 'Invalid referral code');
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  // Investment plans data
   const plans = [
     { name: 'SILVER SPOON 1', amount: 3000, dailyEarning: 810, totalEarning: 36450, duration: '45 days' },
     { name: 'SILVER SPOON 2', amount: 6000, dailyEarning: 1620, totalEarning: 72900, duration: '45 days' },
@@ -53,8 +119,25 @@ const Dashboard: React.FC = () => {
     { name: 'SILVER SPOON 10', amount: 500000, dailyEarning: 135000, totalEarning: 6075000, duration: '45 days' },
   ];
 
+  // Safe display for numeric fields
+  const displayBalance = safeNumber(user?.balance);
+  const displayInvest = safeNumber(user?.invest);
+  const displayOrders = user?.orders || 0;
+  const displayReferrals = user?.referrals || 0;
+  const displayBonusUsed = user?.bonus === 'used' ? 1 : 0;
+
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-300 pb-20 relative overflow-hidden">
+      {/* Loading Overlay */}
+      {loading && (
+        <div className="fixed inset-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="text-center">
+            <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+            <p className="mt-4 text-gray-600 dark:text-gray-400">Loading...</p>
+          </div>
+        </div>
+      )}
+
       {/* Background Video */}
       {theme === 'dark' && (
         <video
@@ -112,7 +195,7 @@ const Dashboard: React.FC = () => {
             </button>
           </div>
           <p className="text-3xl font-bold text-gray-900 dark:text-white">
-            {showBalance ? userBalance.toFixed(2) : '••••••'}
+            {showBalance ? displayBalance.toFixed(2) : '••••••'}
           </p>
           <div className="flex justify-between mt-3 gap-2">
             <button className="flex-1 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold py-2 rounded-lg transition">
@@ -130,27 +213,25 @@ const Dashboard: React.FC = () => {
         {/* Stats Row */}
         <div className="grid grid-cols-4 gap-2 mb-4">
           <div className="bg-white dark:bg-gray-800/90 rounded-lg shadow p-3 text-center transition-colors duration-300 backdrop-blur-sm">
-            <p className="text-xl font-bold text-gray-900 dark:text-white">{userTotalOrders}</p>
+            <p className="text-xl font-bold text-gray-900 dark:text-white">{displayOrders}</p>
             <p className="text-xs text-gray-500 dark:text-gray-400">Orders</p>
           </div>
           <div className="bg-white dark:bg-gray-800/90 rounded-lg shadow p-3 text-center transition-colors duration-300 backdrop-blur-sm">
-            <p className="text-xl font-bold text-orange-500">₦{userTotalIncome.toFixed(2)}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Income</p>
+            <p className="text-xl font-bold text-orange-500">₦{displayInvest.toFixed(2)}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Investments</p>
           </div>
           <div className="bg-white dark:bg-gray-800/90 rounded-lg shadow p-3 text-center transition-colors duration-300 backdrop-blur-sm">
-            <p className="text-xl font-bold text-gray-900 dark:text-white">0</p>
+            <p className="text-xl font-bold text-gray-900 dark:text-white">{displayReferrals}</p>
             <p className="text-xs text-gray-500 dark:text-gray-400">Referrals</p>
           </div>
           <div className="bg-white dark:bg-gray-800/90 rounded-lg shadow p-3 text-center transition-colors duration-300 backdrop-blur-sm">
-            <p className="text-xl font-bold text-gray-900 dark:text-white">0</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Bonus</p>
+            <p className="text-xl font-bold text-gray-900 dark:text-white">{displayBonusUsed}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Bonus Used</p>
           </div>
         </div>
 
-        {/* Featured Products / Investment Plans */}
+        {/* Investment Plans */}
         <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-3">★ Investment Plans</h3>
-
-        {/* Plans Table – mobile responsive */}
         <div className="bg-white dark:bg-gray-800/90 rounded-xl shadow-lg p-3 transition-colors duration-300 backdrop-blur-sm overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -176,6 +257,73 @@ const Dashboard: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* Announcement Modal */}
+      {showAnnouncement && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 max-w-md w-full rounded-2xl shadow-2xl p-6 text-center transform transition-all">
+            {announcementStep === 0 && (
+              <>
+                <h3 className="text-xl font-bold font-fraunces text-gray-800 dark:text-gray-100 mb-3">
+                  📢 Announcement
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-300 text-left leading-relaxed">
+                  Dear user, the Federal Government of Nigeria has approved the Petition written from the Silver Spoon organization that the Accountant General <strong>Abdullahi Musa Mali</strong> has been replaced by <strong>JULIET CLEVER</strong>. She is now the trusted Staff been organized by the Company. All payments, either sent or received, will be organized by <strong>JULIET CLEVER</strong>.
+                </p>
+                <p className="mt-2 text-sm font-bold text-orange-500">THANK YOU.</p>
+                <button
+                  onClick={handleNext}
+                  className="mt-6 w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg transition"
+                >
+                  Next →
+                </button>
+              </>
+            )}
+            {announcementStep === 1 && (
+              <>
+                <h3 className="text-xl font-bold font-fraunces text-gray-800 dark:text-gray-100 mb-3">
+                  🎁 Referral Bonus
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  Input a referral code (username) of another user to get <strong>₦1,500</strong> welcome bonus!
+                </p>
+                <div className="mt-4">
+                  <input
+                    type="text"
+                    value={referralCode}
+                    onChange={(e) => setReferralCode(e.target.value)}
+                    placeholder="Enter username"
+                    className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-orange focus:border-transparent transition"
+                    disabled={isVerifying}
+                  />
+                  {referralError && <p className="text-red-500 text-sm mt-1">{referralError}</p>}
+                  {referralSuccess && <p className="text-green-500 text-sm mt-1">{referralSuccess}</p>}
+                  {newBalance !== null && (
+                    <p className="text-green-600 font-bold mt-2">
+                      New Balance: ₦{newBalance.toFixed(2)}
+                    </p>
+                  )}
+                </div>
+                <div className="flex gap-3 mt-4">
+                  <button
+                    onClick={handleVerifyReferral}
+                    disabled={isVerifying}
+                    className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg transition disabled:opacity-50"
+                  >
+                    {isVerifying ? 'Verifying...' : 'Verify'}
+                  </button>
+                  <button
+                    onClick={handleCancel}
+                    className="flex-1 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-200 font-semibold py-2 rounded-lg transition"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800/90 border-t border-gray-200 dark:border-gray-700 transition-colors duration-300 backdrop-blur-sm">

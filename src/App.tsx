@@ -10,8 +10,12 @@ import ForgotPassword from './Services/ForgotPassword';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
+  console.log('🔒 ProtectedRoute: user=', user, 'loading=', loading);
   if (loading) return <div className="text-center mt-10">Loading...</div>;
-  if (!user) return <Navigate to="/login" />;
+  if (!user) {
+    console.log('🔒 No user, redirecting to /login');
+    return <Navigate to="/login" />;
+  }
   return <>{children}</>;
 };
 
