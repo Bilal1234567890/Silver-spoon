@@ -126,8 +126,8 @@ const Dashboard: React.FC = () => {
     setWithdrawSuccess('');
     try {
       const amount = parseFloat(withdrawAmount);
-      if (isNaN(amount) || amount < 9000) {
-        setWithdrawError('Minimum withdrawal is ₦9,000');
+      if (isNaN(amount) || amount < 2000) {
+        setWithdrawError('Minimum withdrawal is ₦2,000');
         return;
       }
       const res = await api.post('/auth/withdraw', { amount });
@@ -374,7 +374,7 @@ const Dashboard: React.FC = () => {
               💰 Withdraw Funds
             </h3>
             <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
-              Minimum withdrawal: <strong>₦9,000</strong>
+              Minimum withdrawal: <strong>₦2,000</strong>
             </p>
             {withdrawError && <div className="bg-red-100 text-red-700 p-2 rounded mb-4">{withdrawError}</div>}
             {withdrawSuccess && <div className="bg-green-100 text-green-700 p-2 rounded mb-4">{withdrawSuccess}</div>}
@@ -387,7 +387,7 @@ const Dashboard: React.FC = () => {
                   type="number"
                   value={withdrawAmount}
                   onChange={(e) => setWithdrawAmount(e.target.value)}
-                  min="9000"
+                  min="2000"
                   step="100"
                   className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-orange"
                   required
