@@ -9,31 +9,14 @@ import errorHandler from './errorHandler.js';
 
 const app: Express = express();
 
-// ✅ CORS configuration – allow your Vercel frontend
-const allowedOrigins = [
-  'https://silver-spoon-aq650f9qy-the-web-developers-projects.vercel.app',
-  'https://silver-spoon-98y22u710-the-web-developers-projects.vercel.app',
-  'https://silver-spoon-jet.vercel.app',
-  'http://localhost:5173', // local dev
-];
-
-// CORS middleware with dynamic origin
+// ✅ SIMPLEST CORS: allow any origin
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
+  origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-// ✅ Handle OPTIONS preflight requests for all routes
+// ✅ Explicitly handle OPTIONS for all routes
 app.options('*', cors());
 
 connectDB();
