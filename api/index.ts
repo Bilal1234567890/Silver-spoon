@@ -11,26 +11,28 @@ import errorHandler from './errorHandler.js';
 
 const app: Express = express();
 
-// ✅ CORS – allow all origins
+// ✅ CORS – allow all origins (explicit headers)
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') {
+    console.log('🔄 OPTIONS request received for:', req.url);
     return res.sendStatus(204);
   }
   next();
 });
 
-// ✅ Connect to database and handle errors
-try {
-  console.log('🔌 Connecting to database...');
-  await connectDB();
-  console.log('✅ Database connected and synced');
-} catch (err) {
-  console.error('❌ Database connection failed:', err);
-  process.exit(1);
-}
+// ✅ Connect to database (non-blocking, logs errors but doesn't crash)
+connectDB()
+  .then(() => {
+    console.log('✅ Database connected and synced');
+  })
+  .catch((err) => {
+    console.error('❌ Database connection failed (will continue):', err.message);
+    // We don't exit the process – the app will still run,
+    // but endpoints that need DB will fail.
+  });
 
 app.use(express.json());
 
@@ -41,5 +43,7 @@ app.get('/api/health', (req, res) => {
 });
 
 app.use(errorHandler);
+
+console.log('✅ Backend initialized');
 
 export default app;
