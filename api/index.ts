@@ -11,7 +11,14 @@ const app: Express = express();
 
 connectDB();
 
-app.use(cors());
+// ✅ Allow all origins (for testing) – or specify your Vercel URL
+app.use(cors({
+  origin: '*', // or 'https://your-vercel-app.vercel.app'
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+}));
+
 app.use(express.json());
 
 app.use('/api/auth', authRoutes);
