@@ -1,8 +1,9 @@
 import express, { Express } from 'express';
+import cors from 'cors';
 import dotenv from 'dotenv';
 dotenv.config();
 
-console.log('📦 Loading backend modules...');
+console.log('📦 Backend initializing...');
 
 import { connectDB } from './db.js';
 import authRoutes from './authRoutes.js';
@@ -10,25 +11,30 @@ import errorHandler from './errorHandler.js';
 
 const app: Express = express();
 
-// ✅ CORS – MUST be first
-app.use((req, res, next) => {
+// ============ CORS – MUST BE FIRST ============
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+
+// Explicitly handle OPTIONS for all routes
+app.options('*', (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  if (req.method === 'OPTIONS') {
-    console.log('🔄 OPTIONS request:', req.url);
-    return res.sendStatus(204);
-  }
-  next();
+  res.sendStatus(204);
 });
 
-// ✅ Connect to DB (non‑blocking, logs error but doesn't crash)
+// ============ Database (non‑blocking) ============
 connectDB()
   .then(() => console.log('✅ Database connected and synced'))
   .catch((err) => console.error('❌ DB connection error:', err.message));
 
+// ============ Middleware ============
 app.use(express.json());
 
+// ============ Routes ============
 app.use('/api/auth', authRoutes);
 
 app.get('/api/health', (req, res) => {
@@ -37,6 +43,6 @@ app.get('/api/health', (req, res) => {
 
 app.use(errorHandler);
 
-console.log('✅ Backend initialized');
+console.log('✅ Backend ready');
 
 export default app;

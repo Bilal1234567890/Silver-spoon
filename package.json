@@ -4,9 +4,9 @@
   "version": "0.0.0",
   "type": "module",
 "scripts": {
+  "start": "npx tsx server.ts",
   "dev": "vite",
-  "build": "vite build",
-  "preview": "vite preview"
+  "build": "vite build"
 },
   "dependencies": {
     "@getbrevo/brevo": "^6.0.2",
