@@ -67,7 +67,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     let attempts = 0;
     const maxAttempts = 10;
     while (!isUnique && attempts < maxAttempts) {
-      const randomDigits = Math.floor(1000 + Math.random() * 9000);
+      const randomDigits = Math.floor(1000 + Math.random() * 2000);
       username = `S-S${randomDigits}investor`;
       const existing = await User.findOne({ where: { username } });
       if (!existing) {

@@ -373,10 +373,12 @@ const Mine: React.FC = () => {
             <span className="text-xl">👥</span>
             <span className="text-xs">Team</span>
           </button>
-          <button className="flex flex-col items-center text-gray-500 dark:text-gray-400 hover:text-orange-500 transition">
-            <span className="text-xl">📝</span>
-            <span className="text-xs">Task</span>
-          </button>
+
+           <Link to="/task" className="flex flex-col items-center text-gray-500 dark:text-gray-400 hover:text-orange-500 transition">
+           <span className="text-xl">📝</span>
+           <span className="text-xs">Task</span>
+           </Link>
+
           <button className="flex flex-col items-center text-orange-500">
             <span className="text-xl">👤</span>
             <span className="text-xs">Mine</span>

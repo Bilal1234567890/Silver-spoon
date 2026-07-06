@@ -236,7 +236,10 @@ const Dashboard: React.FC = () => {
             {showBalance ? displayBalance.toFixed(2) : '••••••'}
           </p>
           <div className="flex justify-between mt-3 gap-2">
-            <button className="flex-1 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold py-2 rounded-lg transition">
+            <button
+              onClick={() => navigate('/task')}
+              className="flex-1 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold py-2 rounded-lg transition"
+            >
               Invest
             </button>
             <button
@@ -383,6 +386,7 @@ const Dashboard: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Amount (₦)
                 </label>
+
                 <input
                   type="number"
                   value={withdrawAmount}
@@ -390,22 +394,23 @@ const Dashboard: React.FC = () => {
                   min="2000"
                   step="100"
                   className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-orange"
-                  required
-                />
+                  required/>
               </div>
+
               <button
                 type="submit"
                 className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg transition"
               >
                 Withdraw
               </button>
+
               <button
                 type="button"
                 onClick={() => setShowWithdraw(false)}
-                className="w-full mt-2 text-gray-500 hover:text-gray-700 text-sm"
-              >
+                className="w-full mt-2 text-gray-500 hover:text-gray-700 text-sm">
                 Cancel
               </button>
+
             </form>
           </div>
         </div>
@@ -418,25 +423,33 @@ const Dashboard: React.FC = () => {
             <span className="text-xl">🏠</span>
             <span className="text-xs">Home</span>
           </Link>
+
           <button className="flex flex-col items-center text-gray-500 dark:text-gray-400 hover:text-orange-500 transition">
             <span className="text-xl">📋</span>
             <span className="text-xs">Orders</span>
           </button>
+
           <button className="flex flex-col items-center text-gray-500 dark:text-gray-400 hover:text-orange-500 transition">
             <span className="text-xl">👥</span>
             <span className="text-xs">Team</span>
           </button>
-          <button className="flex flex-col items-center text-gray-500 dark:text-gray-400 hover:text-orange-500 transition">
+
+          <Link to="/task" className="flex flex-col items-center text-gray-500 dark:text-gray-400 hover:text-orange-500 transition">
             <span className="text-xl">📝</span>
             <span className="text-xs">Task</span>
-          </button>
+          </Link>
+
           <Link to="/mine" className="flex flex-col items-center text-gray-500 dark:text-gray-400 hover:text-orange-500 transition">
             <span className="text-xl">👤</span>
             <span className="text-xs">Mine</span>
           </Link>
+
         </div>
+
       </div>
+
     </div>
+
   );
 };
 
