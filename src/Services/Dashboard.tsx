@@ -153,28 +153,31 @@ const Dashboard: React.FC = () => {
     setWithdrawAmount('');
   };
 
-  const handleWithdrawSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setWithdrawError('');
-    setWithdrawSuccess('');
-    try {
-      const amount = parseFloat(withdrawAmount);
-      if (isNaN(amount) || amount < 5500) {
-        setWithdrawError('Minimum withdrawal is ₦5,500');
-        return;
-      }
-      const res = await api.post('/auth/withdraw', { amount });
-      setWithdrawSuccess(res.data.message);
-      setTimeout(() => {
-        setShowWithdraw(false);
-        setWithdrawAmount('');
-        setWithdrawStep(1);
-        navigate('/history');
-      }, 3000);
-    } catch (err: any) {
-      setWithdrawError(err.response?.data?.message || 'Withdrawal failed');
+ const handleWithdrawSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setWithdrawError('');
+  setWithdrawSuccess('');
+  try {
+    const amount = parseFloat(withdrawAmount);
+    if (isNaN(amount) || amount < 5500) {
+      setWithdrawError('Minimum withdrawal is ₦5,500');
+      return;
     }
-  };
+    const res = await api.post('/auth/withdraw', { amount });
+    setWithdrawSuccess(res.data.message);
+    // Optionally update balance in state if you have a global state
+    // For now, we reload to reflect the new balance
+    setTimeout(() => {
+      setShowWithdraw(false);
+      setWithdrawAmount('');
+      setWithdrawStep(1);
+      window.location.reload(); // ⬅️ Reload to fetch updated user balance
+      // navigate('/history'); // or navigate after reload
+    }, 3000);
+  } catch (err: any) {
+    setWithdrawError(err.response?.data?.message || 'Withdrawal failed');
+  }
+};
 
   // Investment plans data
   const plans = [

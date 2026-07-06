@@ -319,7 +319,7 @@ export const updateBankDetails = async (req: Request, res: Response, next: NextF
   }
 };
 
-// ✅ WITHDRAWAL REQUEST – using Nigeria time (UTC+1)
+// ✅ WITHDRAWAL REQUEST – deduct balance and create pending record
 export const requestWithdrawal = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { amount } = req.body;
@@ -338,24 +338,24 @@ export const requestWithdrawal = async (req: Request, res: Response, next: NextF
       return res.status(400).json({ message: 'Insufficient balance' });
     }
 
-    // ✅ Get current time in Nigeria (UTC+1)
+    // ✅ Nigeria time check (unchanged)
     const now = new Date();
     const nigeriaTime = new Date(now.toLocaleString('en-US', { timeZone: 'Africa/Lagos' }));
-    const day = nigeriaTime.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+    const day = nigeriaTime.getDay();
     const hours = nigeriaTime.getHours();
-    const minutes = nigeriaTime.getMinutes();
 
-    // Check weekend (Saturday or Sunday)
     if (day === 0 || day === 6) {
       return res.status(400).json({ message: 'Withdrawals are not allowed on weekends (Saturday & Sunday)' });
     }
-
-    // Check time: allow only if hours are between 10 and 17 (10:00 AM to 5:59 PM)
     if (hours < 10 || hours >= 18) {
       return res.status(400).json({
         message: 'Withdrawals are only processed Monday to Friday, 10:00 AM - 6:00 PM (Nigeria time)'
       });
     }
+
+    // ✅ Deduct balance BEFORE creating withdrawal
+    user.balance = Number(user.balance) - Number(amount);
+    await user.save();
 
     // Create pending withdrawal record
     await Withdrawal.create({
@@ -370,12 +370,12 @@ export const requestWithdrawal = async (req: Request, res: Response, next: NextF
     res.json({
       message: 'Withdrawal request submitted. Pending approval.',
       pending: true,
+      newBalance: user.balance,
     });
   } catch (err) {
     next(err);
   }
 };
-
 // ✅ GET TRANSACTION HISTORY
 export const getHistory = async (req: Request, res: Response, next: NextFunction) => {
   try {
