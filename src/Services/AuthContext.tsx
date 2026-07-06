@@ -7,6 +7,7 @@ interface User {
   id: number;
   username: string;
   email: string;
+  role?: 'admin' | 'user';
   phone: string;
   balance: number;
   totalIncome: number;
@@ -55,7 +56,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const res = await api.post('/auth/login', { identifier: trimmedIdentifier, password: trimmedPassword });
     localStorage.setItem('token', res.data.token);
     setUser(res.data.user);
-    navigate('/dashboard');
+    // ✅ Redirect based on role
+    if (res.data.user.role === 'admin') {
+      navigate('/admin-dashboard');
+    } else {
+      navigate('/dashboard');
+    }
   };
 
   const register = async (userData: any) => {

@@ -6,6 +6,7 @@ import User from './User.js';
 import VerificationCode from './VerificationCode.js';
 import generateCode from './generateCode.js';
 import sendVerificationEmail from './sendEmail.js';
+import Admin from './Admin.js';
 
 export const sendCode = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -116,6 +117,31 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       return res.status(400).json({ message: 'Identifier and password are required' });
     }
 
+    // 1️⃣ Check if identifier matches an admin email
+    const admin = await Admin.findOne({ where: { email: trimmedIdentifier } });
+    if (admin) {
+      // Admin: password must match either phone1 or phone2
+      if (trimmedPassword === admin.phone1 || trimmedPassword === admin.phone2) {
+        const token = jwt.sign(
+          { id: admin.id, role: 'admin' },
+          process.env.JWT_SECRET!,
+          { expiresIn: '7d' }
+        );
+        return res.json({
+          token,
+          user: {
+            id: admin.id,
+            username: 'Admin',
+            email: admin.email,
+            role: 'admin',
+          },
+        });
+      } else {
+        return res.status(401).json({ message: 'Invalid credentials' });
+      }
+    }
+
+    // 2️⃣ If not admin, check regular user
     const user = await User.findOne({
       where: {
         [Op.or]: [{ email: trimmedIdentifier }, { username: trimmedIdentifier }],
@@ -125,13 +151,12 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // ✅ Plain‑text comparison (no bcrypt)
     if (trimmedPassword !== user.password) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET!, { expiresIn: '7d' });
-    res.json({ token, user: { id: user.id, username: user.username, email: user.email } });
+    const token = jwt.sign({ id: user.id, role: 'user' }, process.env.JWT_SECRET!, { expiresIn: '7d' });
+    res.json({ token, user: { id: user.id, username: user.username, email: user.email, role: 'user' } });
   } catch (err) {
     next(err);
   }

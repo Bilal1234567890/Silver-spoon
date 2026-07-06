@@ -8,6 +8,7 @@ console.log('📦 Backend initializing...');
 import { connectDB } from './db.js';
 import authRoutes from './authRoutes.js';
 import errorHandler from './errorHandler.js';
+import Admin from './Admin.js';
 
 const app: Express = express();
 
@@ -26,9 +27,27 @@ app.options('*', (req, res) => {
   res.sendStatus(204);
 });
 
-// ✅ Database – non‑blocking, logs errors but doesn't crash
+// ✅ Database connection + seeding
 connectDB()
-  .then(() => console.log('✅ Database connected and synced'))
+  .then(async () => {
+    console.log('✅ Database connected and synced');
+
+    // Seed default admin
+    try {
+      const [admin, created] = await Admin.findOrCreate({
+        where: { email: 'admin@silverspoon.com' },
+        defaults: {
+          email: 'admin@silverspoon.com',
+          phone1: '08168581884',
+          phone2: '08109723950',
+        },
+      });
+      if (created) console.log('✅ Default admin created');
+      else console.log('ℹ️ Admin already exists');
+    } catch (err) {
+      console.error('❌ Failed to seed admin:', err);
+    }
+  })
   .catch((err) => console.error('❌ DB connection error:', err.message));
 
 app.use(express.json());
