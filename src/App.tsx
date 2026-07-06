@@ -10,6 +10,7 @@ import ForgotPassword from './Services/ForgotPassword';
 import Mine from './Services/Mine';
 import Task from './Services/Task';
 import AdminDashboard from './Services/AdminDashboard';
+import History from './Services/History';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
@@ -35,6 +36,7 @@ function App() {
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/mine" element={<ProtectedRoute><Mine /></ProtectedRoute>} />
             <Route path="/task" element={<ProtectedRoute><Task /></ProtectedRoute>} />
+            <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
             <Route path="/admin-dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>

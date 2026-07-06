@@ -9,6 +9,7 @@ import {
   verifyReferral,
   updateBankDetails,
   requestWithdrawal,
+  getHistory, // ✅ added
 } from './authController.js';
 import auth from './auth.js';
 
@@ -23,5 +24,6 @@ router.post('/reset-password', resetPassword);
 router.post('/verify-referral', auth, verifyReferral);
 router.post('/update-bank', auth, updateBankDetails);
 router.post('/withdraw', auth, requestWithdrawal);
+router.get('/history', auth, getHistory);
 
 export default router;

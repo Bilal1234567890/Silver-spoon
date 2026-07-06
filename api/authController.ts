@@ -7,6 +7,8 @@ import VerificationCode from './VerificationCode.js';
 import generateCode from './generateCode.js';
 import sendVerificationEmail from './sendEmail.js';
 import Admin from './Admin.js';
+import Withdrawal from './Withdrawal.js';
+import Deposit from './Deposit.js';
 
 export const sendCode = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -68,7 +70,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     let attempts = 0;
     const maxAttempts = 10;
     while (!isUnique && attempts < maxAttempts) {
-      const randomDigits = Math.floor(1000 + Math.random() * 2000);
+      const randomDigits = Math.floor(1000 + Math.random() * 5500);
       username = `S-S${randomDigits}investor`;
       const existing = await User.findOne({ where: { username } });
       if (!existing) {
@@ -236,7 +238,7 @@ export const resetPassword = async (req: Request, res: Response, next: NextFunct
   }
 };
 
-// ✅ NEW: Verify referral code
+// ✅ Verify referral code
 export const verifyReferral = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { referralCode } = req.body; // username
@@ -269,6 +271,14 @@ export const verifyReferral = async (req: Request, res: Response, next: NextFunc
     currentUser.bonus = 'used';
     await currentUser.save();
 
+    // Record deposit for referral bonus
+    await Deposit.create({
+      userId: currentUser.id,
+      amount: 1500,
+      type: 'referral',
+      description: 'Referral bonus ₦1,500',
+    });
+
     // Increment referred user's referrals count
     referredUser.referrals = (referredUser.referrals || 0) + 1;
     await referredUser.save();
@@ -282,7 +292,6 @@ export const verifyReferral = async (req: Request, res: Response, next: NextFunc
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
-
 
 // UPDATE BANK DETAILS
 export const updateBankDetails = async (req: Request, res: Response, next: NextFunction) => {
@@ -310,53 +319,76 @@ export const updateBankDetails = async (req: Request, res: Response, next: NextF
   }
 };
 
-// WITHDRAWAL REQUEST
+// ✅ WITHDRAWAL REQUEST – using Nigeria time (UTC+1)
 export const requestWithdrawal = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { amount } = req.body;
     const userId = req.userId;
 
-    // Check minimum
-    if (!amount || amount < 2000) {
-      return res.status(400).json({ message: 'Minimum withdrawal amount is ₦2,000' });
+    if (!amount || amount < 5500) {
+      return res.status(400).json({ message: 'Minimum withdrawal amount is ₦5,500' });
     }
 
-    // Check if the user has bank details
     const user = await User.findByPk(userId);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+    if (!user) return res.status(404).json({ message: 'User not found' });
     if (!user.accountNumber || !user.accountName || !user.bankName) {
       return res.status(400).json({ message: 'Please add your bank details first' });
     }
-
-    // Check if balance is sufficient
-    if (user.balance < amount) {
+    if (Number(user.balance) < amount) {
       return res.status(400).json({ message: 'Insufficient balance' });
     }
 
-    // Check time and day
+    // ✅ Get current time in Nigeria (UTC+1)
     const now = new Date();
-    const day = now.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
-    const hours = now.getHours();
-    const minutes = now.getMinutes();
+    const nigeriaTime = new Date(now.toLocaleString('en-US', { timeZone: 'Africa/Lagos' }));
+    const day = nigeriaTime.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+    const hours = nigeriaTime.getHours();
+    const minutes = nigeriaTime.getMinutes();
 
-    // No withdrawal on weekends
+    // Check weekend (Saturday or Sunday)
     if (day === 0 || day === 6) {
       return res.status(400).json({ message: 'Withdrawals are not allowed on weekends (Saturday & Sunday)' });
     }
 
-    // No withdrawal outside 10:00 AM - 6:00 PM
-    if (hours < 10 || (hours === 18 && minutes > 0) || hours > 18) {
-      return res.status(400).json({ message: 'Withdrawals are only processed Monday to Friday, 10:00 AM - 6:00 PM' });
+    // Check time: allow only if hours are between 10 and 17 (10:00 AM to 5:59 PM)
+    if (hours < 10 || hours >= 18) {
+      return res.status(400).json({
+        message: 'Withdrawals are only processed Monday to Friday, 10:00 AM - 6:00 PM (Nigeria time)'
+      });
     }
 
-    // Deduct balance (simulate withdrawal)
-    user.balance = Number(user.balance) - Number(amount);
-    await user.save();
+    // Create pending withdrawal record
+    await Withdrawal.create({
+      userId: user.id,
+      amount,
+      bankName: user.bankName,
+      accountNumber: user.accountNumber,
+      accountName: user.accountName,
+      status: 'pending',
+    });
 
-    // Here you would create a withdrawal transaction record (optional)
-    res.json({ message: `Withdrawal of ₦${amount} processed successfully`, newBalance: user.balance });
+    res.json({
+      message: 'Withdrawal request submitted. Pending approval.',
+      pending: true,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ✅ GET TRANSACTION HISTORY
+export const getHistory = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.userId;
+    const deposits = await Deposit.findAll({
+      where: { userId },
+      order: [['createdAt', 'DESC']],
+    });
+    const withdrawals = await Withdrawal.findAll({
+      where: { userId },
+      order: [['createdAt', 'DESC']],
+    });
+    res.json({ deposits, withdrawals });
   } catch (err) {
     next(err);
   }

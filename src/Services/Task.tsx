@@ -153,10 +153,12 @@ const Task: React.FC = () => {
             <span className="text-xl">📋</span>
             <span className="text-xs">Orders</span>
           </button>
-          <button className="flex flex-col items-center text-gray-500 dark:text-gray-400 hover:text-orange-500 transition">
-            <span className="text-xl">👥</span>
-            <span className="text-xs">Team</span>
-          </button>
+
+          <Link to="/history" className="flex flex-col items-center text-gray-500 dark:text-gray-400 hover:text-orange-500 transition">
+            <span className="text-xl">📊</span>
+            <span className="text-xs">History</span>
+          </Link>
+
           <Link to="/task" className="flex flex-col items-center text-orange-500">
             <span className="text-xl">📝</span>
             <span className="text-xs">Task</span>

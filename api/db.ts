@@ -1,7 +1,6 @@
 console.log('📁 db.ts loaded');
 import { Sequelize } from 'sequelize';
 import dotenv from 'dotenv';
-
 dotenv.config();
 
 // Vercel sets this to 'production' automatically. 
