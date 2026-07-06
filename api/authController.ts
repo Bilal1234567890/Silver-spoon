@@ -393,3 +393,77 @@ export const getHistory = async (req: Request, res: Response, next: NextFunction
     next(err);
   }
 };
+
+/// ✅ Get all pending withdrawals (admin only)
+export const getPendingWithdrawals = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const pending = await Withdrawal.findAll({
+      where: { status: 'pending' },
+      include: [{ model: User, attributes: ['username', 'email'] }],
+      order: [['createdAt', 'DESC']],
+    });
+    res.json(pending);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ✅ Approve a withdrawal
+export const approveWithdrawal = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const withdrawal = await Withdrawal.findByPk(id);
+    if (!withdrawal) {
+      return res.status(404).json({ message: 'Withdrawal not found' });
+    }
+    if (withdrawal.status !== 'pending') {
+      return res.status(400).json({ message: 'Withdrawal already processed' });
+    }
+    withdrawal.status = 'approved';
+    await withdrawal.save();
+    res.json({ message: 'Withdrawal approved successfully', withdrawal });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ✅ Reject a withdrawal
+export const rejectWithdrawal = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const withdrawal = await Withdrawal.findByPk(id);
+    if (!withdrawal) {
+      return res.status(404).json({ message: 'Withdrawal not found' });
+    }
+    if (withdrawal.status !== 'pending') {
+      return res.status(400).json({ message: 'Withdrawal already processed' });
+    }
+    withdrawal.status = 'rejected';
+    await withdrawal.save();
+
+    // Optionally refund the amount to the user
+    const user = await User.findByPk(withdrawal.userId);
+    if (user) {
+      user.balance = Number(user.balance) + Number(withdrawal.amount);
+      await user.save();
+    }
+
+    res.json({ message: 'Withdrawal rejected and amount refunded', withdrawal });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// GET LEADERBOARD – top users by referrals
+export const getLeaderboard = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const users = await User.findAll({
+      attributes: ['id', 'username', 'email', 'referrals'],
+      order: [['referrals', 'DESC']],
+      limit: 50,
+    });
+    res.json(users);
+  } catch (err) {
+    next(err);
+  }
+};

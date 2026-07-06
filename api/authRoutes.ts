@@ -9,9 +9,14 @@ import {
   verifyReferral,
   updateBankDetails,
   requestWithdrawal,
-  getHistory, // ✅ added
+  getHistory,
+  getPendingWithdrawals,
+  approveWithdrawal,
+  rejectWithdrawal,
+  getLeaderboard, // ✅ added
 } from './authController.js';
 import auth from './auth.js';
+import { isAdmin } from './isAdmin.js';
 
 const router = Router();
 
@@ -25,5 +30,11 @@ router.post('/verify-referral', auth, verifyReferral);
 router.post('/update-bank', auth, updateBankDetails);
 router.post('/withdraw', auth, requestWithdrawal);
 router.get('/history', auth, getHistory);
+
+// Admin routes
+router.get('/admin/withdrawals/pending', auth, isAdmin, getPendingWithdrawals);
+router.put('/admin/withdrawals/:id/approve', auth, isAdmin, approveWithdrawal);
+router.put('/admin/withdrawals/:id/reject', auth, isAdmin, rejectWithdrawal);
+router.get('/admin/leaderboard', auth, isAdmin, getLeaderboard); // ✅ new route
 
 export default router;

@@ -1,6 +1,7 @@
 import * as Sequelize from 'sequelize';
 const { Model, DataTypes } = Sequelize;
 import { sequelize } from './db.js';
+import User from './User.js';
 
 class Withdrawal extends Model {
   declare id: number;
@@ -28,5 +29,8 @@ Withdrawal.init(
     timestamps: true,
   }
 );
+
+// Association
+Withdrawal.belongsTo(User, { foreignKey: 'userId' });
 
 export default Withdrawal;

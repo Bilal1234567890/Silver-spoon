@@ -22,6 +22,20 @@ interface WithdrawalItem {
   createdAt: string;
 }
 
+// ✅ Helper to display user-friendly status
+const getStatusDisplay = (status: string): { label: string; color: string } => {
+  switch (status) {
+    case 'approved':
+      return { label: 'SUCCESSFUL', color: 'text-green-600' };
+    case 'rejected':
+      return { label: 'REJECTED', color: 'text-red-600' };
+    case 'pending':
+      return { label: 'PENDING', color: 'text-yellow-600' };
+    default:
+      return { label: status, color: 'text-gray-600' };
+  }
+};
+
 const History: React.FC = () => {
   const { user, loading } = useAuth();
   const { theme, toggleTheme } = useTheme();
@@ -110,30 +124,29 @@ const History: React.FC = () => {
         {withdrawals.length > 0 && (
           <div>
             <h2 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-3">Withdrawals</h2>
-            {withdrawals.map((wit) => (
-              <div key={wit.id} className="bg-white dark:bg-gray-800/90 rounded-xl shadow-lg p-4 mb-3 backdrop-blur-sm">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="font-semibold text-red-600 dark:text-red-400">
-                      -₦{Number(wit.amount).toFixed(2)}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {wit.bankName} • {wit.accountNumber}
-                    </p>
-                    <span className={`text-xs font-medium ${
-                      wit.status === 'approved' ? 'text-green-600' :
-                      wit.status === 'rejected' ? 'text-red-600' :
-                      'text-yellow-600'
-                    }`}>
-                      {wit.status.toUpperCase()}
+            {withdrawals.map((wit) => {
+              const statusInfo = getStatusDisplay(wit.status);
+              return (
+                <div key={wit.id} className="bg-white dark:bg-gray-800/90 rounded-xl shadow-lg p-4 mb-3 backdrop-blur-sm">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="font-semibold text-red-600 dark:text-red-400">
+                        -₦{Number(wit.amount).toFixed(2)}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {wit.bankName} • {wit.accountNumber}
+                      </p>
+                      <span className={`text-xs font-medium ${statusInfo.color}`}>
+                        {statusInfo.label}
+                      </span>
+                    </div>
+                    <span className="text-xs text-gray-400">
+                      {new Date(wit.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </span>
                   </div>
-                  <span className="text-xs text-gray-400">
-                    {new Date(wit.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                  </span>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
