@@ -16,11 +16,11 @@ interface User {
   invest: number;
   orders: number;
   referrals: number;
-  // New bank details
   profilePicture: string | null;
   accountNumber: string | null;
   accountName: string | null;
   bankName: string | null;
+  lastDailyCheck: string | null; // ✅ added
 }
 
 interface AuthContextType {
@@ -45,8 +45,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const token = localStorage.getItem('token');
     if (token) {
       api.get('/auth/me')
-        .then(res => { setUser(res.data); setLoading(false); })
-        .catch(() => { localStorage.removeItem('token'); setLoading(false); });
+        .then(res => {
+          setUser(res.data);
+          setLoading(false);
+        })
+        .catch(() => {
+          localStorage.removeItem('token');
+          setLoading(false);
+        });
     } else setLoading(false);
   }, []);
 
@@ -56,7 +62,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const res = await api.post('/auth/login', { identifier: trimmedIdentifier, password: trimmedPassword });
     localStorage.setItem('token', res.data.token);
     setUser(res.data.user);
-    // ✅ Redirect based on role
     if (res.data.user.role === 'admin') {
       navigate('/admin-dashboard');
     } else {

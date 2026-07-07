@@ -467,3 +467,50 @@ export const getLeaderboard = async (req: Request, res: Response, next: NextFunc
     next(err);
   }
 };
+
+// ✅ DAILY CHECK – add ₦50 bonus with 24h cooldown
+export const dailyCheck = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.userId;
+    const user = await User.findByPk(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const now = new Date();
+    const lastCheck = user.lastDailyCheck;
+
+    if (lastCheck) {
+      const diff = now.getTime() - new Date(lastCheck).getTime();
+      const hoursDiff = diff / (1000 * 60 * 60);
+      if (hoursDiff < 24) {
+        const remainingMs = 24 * 60 * 60 * 1000 - diff;
+        const remainingHours = Math.floor(remainingMs / (1000 * 60 * 60));
+        const remainingMinutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+        return res.status(400).json({
+          message: `Please wait ${remainingHours}h ${remainingMinutes}m before checking again.`,
+          remainingMs,
+        });
+      }
+    }
+
+    // Add ₦50
+    user.balance = Number(user.balance) + 50;
+    user.lastDailyCheck = now;
+    await user.save();
+
+    // Record deposit
+    await Deposit.create({
+      userId: user.id,
+      amount: 50,
+      type: 'daily_check',
+      description: 'Daily check ₦50',
+    });
+
+    res.json({
+      message: 'Daily check bonus of ₦50 added!',
+      newBalance: user.balance,
+      nextCheckTime: now.getTime() + 24 * 60 * 60 * 1000,
+    });
+  } catch (err) {
+    next(err);
+  }
+};

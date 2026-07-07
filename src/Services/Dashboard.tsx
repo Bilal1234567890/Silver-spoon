@@ -33,6 +33,12 @@ const Dashboard: React.FC = () => {
   // ✅ Withdrawal availability (Nigeria time)
   const [isWithdrawAvailable, setIsWithdrawAvailable] = useState(false);
 
+  // ✅ Daily Check state
+  const [dailyProgress, setDailyProgress] = useState(0);
+  const [dailyDisabled, setDailyDisabled] = useState(false);
+  const [dailyMessage, setDailyMessage] = useState('');
+  const [dailyLoading, setDailyLoading] = useState(false);
+
   // ✅ Check withdrawal availability every minute using Nigeria time
   useEffect(() => {
     const checkAvailability = () => {
@@ -41,7 +47,6 @@ const Dashboard: React.FC = () => {
       const day = nigeriaTime.getDay();
       const hours = nigeriaTime.getHours();
 
-      // Available: Mon-Fri, 10:00 AM - 5:59 PM (strictly before 6:00 PM)
       const isWeekday = day >= 1 && day <= 5;
       const isWithinTime = hours >= 10 && hours < 18;
 
@@ -52,6 +57,35 @@ const Dashboard: React.FC = () => {
     const interval = setInterval(checkAvailability, 60000);
     return () => clearInterval(interval);
   }, []);
+
+  // ✅ Daily check progress (water‑fill)
+  useEffect(() => {
+    if (!user?.lastDailyCheck) {
+      setDailyProgress(1);
+      setDailyDisabled(false);
+      return;
+    }
+
+    const last = new Date(user.lastDailyCheck);
+    const now = new Date();
+    const diff = now.getTime() - last.getTime();
+    const elapsedHours = diff / (1000 * 60 * 60);
+    const progress = Math.min(elapsedHours / 24, 1);
+
+    setDailyProgress(progress);
+    setDailyDisabled(progress < 1);
+
+    const timer = setInterval(() => {
+      const now2 = new Date();
+      const diff2 = now2.getTime() - last.getTime();
+      const elapsed2 = diff2 / (1000 * 60 * 60);
+      const newProgress = Math.min(elapsed2 / 24, 1);
+      setDailyProgress(newProgress);
+      setDailyDisabled(newProgress < 1);
+    }, 60000);
+
+    return () => clearInterval(timer);
+  }, [user?.lastDailyCheck]);
 
   const safeNumber = (value: any): number => {
     const num = parseFloat(value);
@@ -153,31 +187,51 @@ const Dashboard: React.FC = () => {
     setWithdrawAmount('');
   };
 
- const handleWithdrawSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setWithdrawError('');
-  setWithdrawSuccess('');
-  try {
-    const amount = parseFloat(withdrawAmount);
-    if (isNaN(amount) || amount < 5500) {
-      setWithdrawError('Minimum withdrawal is ₦5,500');
-      return;
+  const handleWithdrawSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setWithdrawError('');
+    setWithdrawSuccess('');
+    try {
+      const amount = parseFloat(withdrawAmount);
+      if (isNaN(amount) || amount < 5500) {
+        setWithdrawError('Minimum withdrawal is ₦5,500');
+        return;
+      }
+      const res = await api.post('/auth/withdraw', { amount });
+      setWithdrawSuccess(res.data.message);
+      setTimeout(() => {
+        setShowWithdraw(false);
+        setWithdrawAmount('');
+        setWithdrawStep(1);
+        window.location.reload();
+      }, 3000);
+    } catch (err: any) {
+      setWithdrawError(err.response?.data?.message || 'Withdrawal failed');
     }
-    const res = await api.post('/auth/withdraw', { amount });
-    setWithdrawSuccess(res.data.message);
-    // Optionally update balance in state if you have a global state
-    // For now, we reload to reflect the new balance
-    setTimeout(() => {
-      setShowWithdraw(false);
-      setWithdrawAmount('');
-      setWithdrawStep(1);
-      window.location.reload(); // ⬅️ Reload to fetch updated user balance
-      // navigate('/history'); // or navigate after reload
-    }, 3000);
-  } catch (err: any) {
-    setWithdrawError(err.response?.data?.message || 'Withdrawal failed');
-  }
-};
+  };
+
+  // ✅ Daily Check handler
+  const handleDailyCheck = async () => {
+    if (dailyDisabled) return;
+    setDailyLoading(true);
+    setDailyMessage('');
+    try {
+      const res = await api.post('/auth/daily-check');
+      setDailyMessage(res.data.message);
+      // Inside handleDailyCheck
+    if (user) {
+      user.balance = res.data.newBalance;
+      user.lastDailyCheck = new Date().toISOString(); // ✅ string
+      setDailyProgress(0);
+      setDailyDisabled(true);
+    }
+      setTimeout(() => setDailyMessage(''), 5000);
+    } catch (err: any) {
+      setDailyMessage(err.response?.data?.message || 'Failed to claim daily check');
+    } finally {
+      setDailyLoading(false);
+    }
+  };
 
   // Investment plans data
   const plans = [
@@ -278,9 +332,27 @@ const Dashboard: React.FC = () => {
             >
               Withdraw
             </button>
-            <button className="flex-1 bg-purple-500 hover:bg-purple-600 text-white text-sm font-semibold py-2 rounded-lg transition">
-              Daily Check
-            </button>
+            <div className="relative flex-1">
+              <button
+                onClick={handleDailyCheck}
+                disabled={dailyDisabled || dailyLoading}
+                className={`relative w-full overflow-hidden text-white text-sm font-semibold py-2 rounded-lg transition ${
+                  dailyDisabled ? 'bg-gray-400 cursor-not-allowed' : 'bg-purple-500 hover:bg-purple-600'
+                }`}
+              >
+                {/* Water-fill progress bar */}
+                <div
+                  className="absolute inset-0 bg-blue-400 opacity-30 transition-all duration-1000 ease-linear"
+                  style={{ width: `${dailyProgress * 100}%` }}
+                />
+                <span className="relative z-10">
+                  {dailyLoading ? 'Loading...' : dailyDisabled ? `${Math.round(dailyProgress * 100)}%` : 'Daily Check'}
+                </span>
+              </button>
+              {dailyMessage && (
+                <p className="text-xs text-center mt-1 text-gray-600 dark:text-gray-400">{dailyMessage}</p>
+              )}
+            </div>
           </div>
         </div>
 

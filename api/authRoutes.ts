@@ -13,7 +13,8 @@ import {
   getPendingWithdrawals,
   approveWithdrawal,
   rejectWithdrawal,
-  getLeaderboard, // ✅ added
+  getLeaderboard,
+  dailyCheck, // ✅ added
 } from './authController.js';
 import auth from './auth.js';
 import { isAdmin } from './isAdmin.js';
@@ -29,6 +30,7 @@ router.post('/reset-password', resetPassword);
 router.post('/verify-referral', auth, verifyReferral);
 router.post('/update-bank', auth, updateBankDetails);
 router.post('/withdraw', auth, requestWithdrawal);
+router.post('/daily-check', auth, dailyCheck);
 router.get('/history', auth, getHistory);
 
 // Admin routes

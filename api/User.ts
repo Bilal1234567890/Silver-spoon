@@ -20,6 +20,7 @@ class User extends Model {
   declare accountNumber: string | null;
   declare accountName: string | null;
   declare bankName: string | null;
+   declare lastDailyCheck: Date | null; // ✅ new
 }
 
 User.init(
@@ -101,6 +102,11 @@ User.init(
     },
     bankName: {
       type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: null,
+    },
+    lastDailyCheck: {
+      type: DataTypes.DATE,
       allowNull: true,
       defaultValue: null,
     },
