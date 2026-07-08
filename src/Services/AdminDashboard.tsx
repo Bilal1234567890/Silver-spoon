@@ -80,7 +80,6 @@ const AdminDashboard: React.FC = () => {
     setLoading(true);
     try {
       const res = await api.get('/auth/admin/leaderboard');
-      console.log('📊 Leaderboard API response:', res.data);
       if (Array.isArray(res.data)) {
         setLeaderboard(res.data);
       } else {
@@ -150,6 +149,69 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  // ===== RECEIPT CARD RENDERER =====
+  const ReceiptCard: React.FC<{
+    title: string;
+    amount: number;
+    status: string;
+    date: string;
+    user: { username: string; email: string };
+    recipient?: { bank: string; accountNumber: string; accountName: string };
+    sender?: { bank: string; accountNumber: string; accountName: string };
+    actions?: React.ReactNode;
+  }> = ({ title, amount, status, date, user, recipient, sender, actions }) => {
+    const statusColor = status === 'pending' ? 'text-yellow-600' : status === 'approved' || status === 'verified' ? 'text-green-600' : 'text-red-600';
+    const statusLabel = status === 'pending' ? 'Pending' : status === 'approved' || status === 'verified' ? 'Successful' : 'Rejected';
+
+    return (
+      <div className="bg-white dark:bg-gray-800/90 rounded-xl shadow-lg p-4 mb-4 backdrop-blur-sm border border-gray-200 dark:border-gray-700">
+        <div className="flex justify-between items-start">
+          <div>
+            <h3 className="font-bold text-gray-800 dark:text-gray-100">{title}</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">User: {user.username} ({user.email})</p>
+          </div>
+          <span className={`text-xs font-semibold ${statusColor}`}>{statusLabel}</span>
+        </div>
+
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <div>
+            <span className="text-xs text-gray-500 dark:text-gray-400">Amount</span>
+            <p className="font-bold text-gray-900 dark:text-white">₦{Number(amount).toFixed(2)}</p>
+          </div>
+          <div>
+            <span className="text-xs text-gray-500 dark:text-gray-400">Date</span>
+            <p className="text-sm text-gray-700 dark:text-gray-300">{new Date(date).toLocaleString()}</p>
+          </div>
+        </div>
+
+        {/* Recipient Details (for withdrawals) */}
+        {recipient && (
+          <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+            <p className="text-xs font-semibold text-gray-600 dark:text-gray-300">Recipient Details</p>
+            <p className="text-sm text-gray-700 dark:text-gray-300">{recipient.accountName}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{recipient.bank} | {recipient.accountNumber}</p>
+          </div>
+        )}
+
+        {/* Sender Details (for deposits) */}
+        {sender && (
+          <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+            <p className="text-xs font-semibold text-gray-600 dark:text-gray-300">Sender Details</p>
+            <p className="text-sm text-gray-700 dark:text-gray-300">{sender.accountName}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{sender.bank} | {sender.accountNumber}</p>
+          </div>
+        )}
+
+        {/* Actions */}
+        {actions && (
+          <div className="mt-3 flex gap-2">
+            {actions}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   // ===== RENDER CONTENT =====
   const renderContent = () => {
     switch (activeTab) {
@@ -167,17 +229,25 @@ const AdminDashboard: React.FC = () => {
               <p className="text-gray-500 dark:text-gray-400">No pending withdrawals.</p>
             ) : (
               withdrawals.map((w) => (
-                <div key={w.id} className="bg-white dark:bg-gray-800/90 rounded-xl shadow p-4 mb-4 backdrop-blur-sm">
-                  <p><strong>User:</strong> {w.User?.username} ({w.User?.email})</p>
-                  <p><strong>Amount:</strong> ₦{Number(w.amount).toFixed(2)}</p>
-                  <p><strong>Bank:</strong> {w.bankName}</p>
-                  <p><strong>Account:</strong> {w.accountNumber} - {w.accountName}</p>
-                  <p className="text-xs text-gray-400">{new Date(w.createdAt).toLocaleString()}</p>
-                  <div className="flex gap-2 mt-3">
-                    <button onClick={() => handleApprove(w.id)} className="bg-green-500 hover:bg-green-600 text-white px-4 py-1 rounded">Approve</button>
-                    <button onClick={() => handleReject(w.id)} className="bg-red-500 hover:bg-red-600 text-white px-4 py-1 rounded">Reject</button>
-                  </div>
-                </div>
+                <ReceiptCard
+                  key={w.id}
+                  title="Withdrawal Request"
+                  amount={w.amount}
+                  status={w.status}
+                  date={w.createdAt}
+                  user={w.User!}
+                  recipient={{
+                    bank: w.bankName,
+                    accountNumber: w.accountNumber,
+                    accountName: w.accountName,
+                  }}
+                  actions={
+                    <>
+                      <button onClick={() => handleApprove(w.id)} className="bg-green-500 hover:bg-green-600 text-white px-4 py-1 rounded text-sm">Approve</button>
+                      <button onClick={() => handleReject(w.id)} className="bg-red-500 hover:bg-red-600 text-white px-4 py-1 rounded text-sm">Reject</button>
+                    </>
+                  }
+                />
               ))
             )}
           </div>
@@ -194,22 +264,25 @@ const AdminDashboard: React.FC = () => {
               <p className="text-gray-500 dark:text-gray-400">No pending deposits.</p>
             ) : (
               deposits.map((d) => (
-                <div key={d.id} className="bg-white dark:bg-gray-800/90 rounded-xl shadow p-4 mb-4 backdrop-blur-sm">
-                  <p><strong>User:</strong> {d.User?.username} ({d.User?.email})</p>
-                  <p><strong>Amount:</strong> ₦{Number(d.amount).toFixed(2)}</p>
-                  <p><strong>Description:</strong> {d.description || 'Deposit'}</p>
-                  {d.senderBank && (
+                <ReceiptCard
+                  key={d.id}
+                  title="Deposit Request"
+                  amount={d.amount}
+                  status={d.status}
+                  date={d.createdAt}
+                  user={d.User!}
+                  sender={{
+                    bank: d.senderBank || 'N/A',
+                    accountNumber: d.senderAccountNumber || 'N/A',
+                    accountName: d.senderAccountName || 'N/A',
+                  }}
+                  actions={
                     <>
-                      <p><strong>Sender Bank:</strong> {d.senderBank}</p>
-                      <p><strong>Sender Account:</strong> {d.senderAccountNumber} - {d.senderAccountName}</p>
+                      <button onClick={() => handleApproveDeposit(d.id)} className="bg-green-500 hover:bg-green-600 text-white px-4 py-1 rounded text-sm">Approve</button>
+                      <button onClick={() => handleRejectDeposit(d.id)} className="bg-red-500 hover:bg-red-600 text-white px-4 py-1 rounded text-sm">Reject</button>
                     </>
-                  )}
-                  <p className="text-xs text-gray-400">{new Date(d.createdAt).toLocaleString()}</p>
-                  <div className="flex gap-2 mt-3">
-                    <button onClick={() => handleApproveDeposit(d.id)} className="bg-green-500 hover:bg-green-600 text-white px-4 py-1 rounded">Approve</button>
-                    <button onClick={() => handleRejectDeposit(d.id)} className="bg-red-500 hover:bg-red-600 text-white px-4 py-1 rounded">Reject</button>
-                  </div>
-                </div>
+                  }
+                />
               ))
             )}
           </div>
@@ -280,12 +353,13 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex justify-around bg-white dark:bg-gray-800/90 rounded-xl shadow-lg p-2 mb-6 backdrop-blur-sm">
+        {/* Tab buttons with smaller text to fit */}
+        <div className="flex flex-wrap justify-around bg-white dark:bg-gray-800/90 rounded-xl shadow-lg p-2 mb-6 backdrop-blur-sm gap-1">
           {['dashboard', 'withdrawals', 'deposits', 'add-balance', 'leaderboard'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
+              className={`px-2 py-1 rounded-lg text-xs font-medium transition whitespace-nowrap ${
                 activeTab === tab ? 'bg-orange-500 text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
             >

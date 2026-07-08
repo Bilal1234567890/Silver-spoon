@@ -70,7 +70,7 @@ export const connectDB = async () => {
     console.log(`✅ Connected to ${isProduction ? 'Aiven (Cloud)' : 'Local MySQL'} database successfully on port ${dbPort}.`);
 
     // 🔥 Create tables if they don't exist (force: true drops & recreates – safe for fresh DB)
-    await sequelize.sync({ force: true });
+    await sequelize.sync({ alter: true });
     console.log('✅ Tables synced (created fresh).');
 
   } catch (error) {
