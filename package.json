@@ -3,11 +3,11 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-"scripts": {
-  "start": "npx tsx server.ts",
-  "dev": "vite",
-  "build": "vite build"
-},
+  "scripts": {
+    "start": "npx tsx server.ts",
+    "dev": "vite",
+    "build": "vite build"
+  },
   "dependencies": {
     "@getbrevo/brevo": "^6.0.2",
     "@types/three": "^0.185.0",
@@ -20,6 +20,7 @@
     "jsonwebtoken": "^9.0.2",
     "mysql": "^2.18.1",
     "mysql2": "^3.22.5",
+    "node-cron": "^4.6.0",
     "nodemailer": "^9.0.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

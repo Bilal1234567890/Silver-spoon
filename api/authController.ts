@@ -9,6 +9,7 @@ import sendVerificationEmail from './sendEmail.js';
 import Admin from './Admin.js';
 import Withdrawal from './Withdrawal.js';
 import Deposit from './Deposit.js';
+import Order from './Order.js';
 
 export const sendCode = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -510,6 +511,154 @@ export const dailyCheck = async (req: Request, res: Response, next: NextFunction
       newBalance: user.balance,
       nextCheckTime: now.getTime() + 24 * 60 * 60 * 1000,
     });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ✅ Invest in a plan (with active order limit)
+export const invest = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { planName, amount, dailyIncome, totalIncome, duration } = req.body;
+    const userId = req.userId;
+
+    // 1. Find user
+    const user = await User.findByPk(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // 2. Check active orders limit (max 2)
+    const activeOrders = await Order.count({ where: { userId, status: 'active' } });
+    if (activeOrders >= 2) {
+      return res.status(400).json({
+        message: 'You already have 2 active investments. Please wait for them to complete.'
+      });
+    }
+
+    // 3. Check balance
+    if (Number(user.balance) < amount) {
+      return res.status(400).json({ message: 'Insufficient balance' });
+    }
+
+    // 4. Deduct balance & update user stats
+    user.balance = Number(user.balance) - amount;
+    user.invest = Number(user.invest) + amount;
+    user.orders = Number(user.orders) + 1;
+    await user.save();
+
+    // 5. Create order
+    const startDate = new Date();
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() + duration);
+
+    const order = await Order.create({
+      userId,
+      planName,
+      amount,
+      dailyIncome,
+      totalIncome,
+      duration,
+      startDate,
+      endDate,
+      status: 'active',
+      lastIncomeDate: startDate,
+    });
+
+    res.json({ message: 'Investment successful', order, newBalance: user.balance });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ✅ Get user orders
+export const getOrders = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.userId;
+    const orders = await Order.findAll({
+      where: { userId },
+      order: [['createdAt', 'DESC']],
+    });
+    res.json(orders);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ✅ Create a pending deposit with sender details
+export const createDeposit = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { amount, description, senderBank, senderAccountNumber, senderAccountName } = req.body;
+    const userId = req.userId;
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ message: 'Valid amount is required' });
+    }
+    if (!senderBank || !senderAccountNumber || !senderAccountName) {
+      return res.status(400).json({ message: 'Sender bank details are required' });
+    }
+    const deposit = await Deposit.create({
+      userId,
+      amount,
+      type: 'deposit',
+      description: description || `Deposit of ₦${amount}`,
+      status: 'pending',
+      senderBank,
+      senderAccountNumber,
+      senderAccountName,
+    });
+    res.json({ message: 'Deposit recorded successfully', deposit });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ✅ Admin: Get pending deposits
+export const getPendingDeposits = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const deposits = await Deposit.findAll({
+      where: { status: 'pending', type: 'deposit' },
+      include: [{ model: User, attributes: ['id', 'username', 'email'] }],
+      order: [['createdAt', 'DESC']],
+    });
+    res.json(deposits);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ✅ Admin: Approve deposit
+export const approveDeposit = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const deposit = await Deposit.findByPk(id);
+    if (!deposit) return res.status(404).json({ message: 'Deposit not found' });
+    if (deposit.status !== 'pending') {
+      return res.status(400).json({ message: 'Deposit already processed' });
+    }
+    deposit.status = 'verified';
+    await deposit.save();
+    // Optionally add amount to user balance
+    const user = await User.findByPk(deposit.userId);
+    if (user) {
+      user.balance = Number(user.balance) + Number(deposit.amount);
+      await user.save();
+    }
+    res.json({ message: 'Deposit approved and balance updated', deposit });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ✅ Admin: Reject deposit
+export const rejectDeposit = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const deposit = await Deposit.findByPk(id);
+    if (!deposit) return res.status(404).json({ message: 'Deposit not found' });
+    if (deposit.status !== 'pending') {
+      return res.status(400).json({ message: 'Deposit already processed' });
+    }
+    deposit.status = 'rejected';
+    await deposit.save();
+    res.json({ message: 'Deposit rejected', deposit });
   } catch (err) {
     next(err);
   }

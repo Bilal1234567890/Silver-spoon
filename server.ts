@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+import './api/cron.js';
 dotenv.config();
 
 console.log('🚀 Starting server...');

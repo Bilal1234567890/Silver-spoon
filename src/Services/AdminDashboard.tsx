@@ -16,6 +16,20 @@ interface Withdrawal {
   User?: { username: string; email: string };
 }
 
+interface Deposit {
+  id: number;
+  userId: number;
+  amount: number;
+  type: string;
+  description: string;
+  status: 'pending' | 'verified' | 'rejected';
+  senderBank?: string;
+  senderAccountNumber?: string;
+  senderAccountName?: string;
+  User?: { username: string; email: string };
+  createdAt: string;
+}
+
 interface LeaderboardUser {
   id: number;
   username: string;
@@ -28,10 +42,12 @@ const AdminDashboard: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
+  const [deposits, setDeposits] = useState<Deposit[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
+  // ===== FETCH PENDING WITHDRAWALS =====
   const fetchPending = async () => {
     setLoading(true);
     try {
@@ -45,6 +61,21 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  // ===== FETCH PENDING DEPOSITS =====
+  const fetchPendingDeposits = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get('/auth/admin/deposits/pending');
+      setDeposits(res.data);
+    } catch (err: any) {
+      console.error('Failed to fetch pending deposits:', err);
+      setMessage('Failed to load pending deposits');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ===== FETCH LEADERBOARD =====
   const fetchLeaderboard = async () => {
     setLoading(true);
     try {
@@ -66,11 +97,14 @@ const AdminDashboard: React.FC = () => {
   useEffect(() => {
     if (activeTab === 'withdrawals') {
       fetchPending();
+    } else if (activeTab === 'deposits') {
+      fetchPendingDeposits();
     } else if (activeTab === 'leaderboard') {
       fetchLeaderboard();
     }
   }, [activeTab]);
 
+  // ===== WITHDRAWAL ACTIONS =====
   const handleApprove = async (id: number) => {
     if (!window.confirm('Approve this withdrawal?')) return;
     try {
@@ -93,10 +127,35 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  // ===== DEPOSIT ACTIONS =====
+  const handleApproveDeposit = async (id: number) => {
+    if (!window.confirm('Approve this deposit?')) return;
+    try {
+      await api.put(`/auth/admin/deposits/${id}/approve`);
+      setMessage('Deposit approved!');
+      fetchPendingDeposits();
+    } catch (err: any) {
+      setMessage('Failed to approve deposit');
+    }
+  };
+
+  const handleRejectDeposit = async (id: number) => {
+    if (!window.confirm('Reject this deposit?')) return;
+    try {
+      await api.put(`/auth/admin/deposits/${id}/reject`);
+      setMessage('Deposit rejected.');
+      fetchPendingDeposits();
+    } catch (err: any) {
+      setMessage('Failed to reject deposit');
+    }
+  };
+
+  // ===== RENDER CONTENT =====
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
         return <div className="text-gray-800 dark:text-gray-100">Welcome Admin! Overview stats here.</div>;
+
       case 'withdrawals':
         return (
           <div>
@@ -123,8 +182,42 @@ const AdminDashboard: React.FC = () => {
             )}
           </div>
         );
+
+      case 'deposits':
+        return (
+          <div>
+            <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">Pending Deposits</h2>
+            {message && <div className="bg-green-100 text-green-700 p-2 rounded mb-4">{message}</div>}
+            {loading ? (
+              <p>Loading...</p>
+            ) : deposits.length === 0 ? (
+              <p className="text-gray-500 dark:text-gray-400">No pending deposits.</p>
+            ) : (
+              deposits.map((d) => (
+                <div key={d.id} className="bg-white dark:bg-gray-800/90 rounded-xl shadow p-4 mb-4 backdrop-blur-sm">
+                  <p><strong>User:</strong> {d.User?.username} ({d.User?.email})</p>
+                  <p><strong>Amount:</strong> ₦{Number(d.amount).toFixed(2)}</p>
+                  <p><strong>Description:</strong> {d.description || 'Deposit'}</p>
+                  {d.senderBank && (
+                    <>
+                      <p><strong>Sender Bank:</strong> {d.senderBank}</p>
+                      <p><strong>Sender Account:</strong> {d.senderAccountNumber} - {d.senderAccountName}</p>
+                    </>
+                  )}
+                  <p className="text-xs text-gray-400">{new Date(d.createdAt).toLocaleString()}</p>
+                  <div className="flex gap-2 mt-3">
+                    <button onClick={() => handleApproveDeposit(d.id)} className="bg-green-500 hover:bg-green-600 text-white px-4 py-1 rounded">Approve</button>
+                    <button onClick={() => handleRejectDeposit(d.id)} className="bg-red-500 hover:bg-red-600 text-white px-4 py-1 rounded">Reject</button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        );
+
       case 'add-balance':
         return <div>Add balance form (coming soon).</div>;
+
       case 'leaderboard':
         return (
           <div>
@@ -158,6 +251,7 @@ const AdminDashboard: React.FC = () => {
             )}
           </div>
         );
+
       default:
         return null;
     }
@@ -187,7 +281,7 @@ const AdminDashboard: React.FC = () => {
         </div>
 
         <div className="flex justify-around bg-white dark:bg-gray-800/90 rounded-xl shadow-lg p-2 mb-6 backdrop-blur-sm">
-          {['dashboard', 'withdrawals', 'add-balance', 'leaderboard'].map((tab) => (
+          {['dashboard', 'withdrawals', 'deposits', 'add-balance', 'leaderboard'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -207,13 +301,15 @@ const AdminDashboard: React.FC = () => {
 
       <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800/90 border-t border-gray-200 dark:border-gray-700 backdrop-blur-sm">
         <div className="max-w-md mx-auto flex justify-around py-2">
-          {['dashboard', 'withdrawals', 'add-balance', 'leaderboard'].map((tab) => (
+          {['dashboard', 'withdrawals', 'deposits', 'add-balance', 'leaderboard'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`flex flex-col items-center ${activeTab === tab ? 'text-orange-500' : 'text-gray-500 dark:text-gray-400'}`}
             >
-              <span className="text-xl">{tab === 'dashboard' ? '🏠' : tab === 'withdrawals' ? '💰' : tab === 'add-balance' ? '➕' : '🏆'}</span>
+              <span className="text-xl">
+                {tab === 'dashboard' ? '🏠' : tab === 'withdrawals' ? '💰' : tab === 'deposits' ? '📥' : tab === 'add-balance' ? '➕' : '🏆'}
+              </span>
               <span className="text-xs">{tab.charAt(0).toUpperCase() + tab.slice(1).replace('-', ' ')}</span>
             </button>
           ))}

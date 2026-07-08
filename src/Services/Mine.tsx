@@ -365,10 +365,11 @@ const Mine: React.FC = () => {
             <span className="text-xl">🏠</span>
             <span className="text-xs">Home</span>
           </Link>
-          <button className="flex flex-col items-center text-gray-500 dark:text-gray-400 hover:text-orange-500 transition">
-            <span className="text-xl">📋</span>
-            <span className="text-xs">Orders</span>
-          </button>
+          
+          <Link to="/orders" className="flex flex-col items-center text-gray-500 dark:text-gray-400 hover:text-orange-500 transition">
+             <span className="text-xl">📋</span>
+             <span className="text-xs">Orders</span>
+          </Link>
 
           <Link to="/history" className="flex flex-col items-center text-gray-500 dark:text-gray-400 hover:text-orange-500 transition">
             <span className="text-xl">📊</span>

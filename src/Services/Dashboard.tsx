@@ -30,51 +30,45 @@ const Dashboard: React.FC = () => {
   const [withdrawSuccess, setWithdrawSuccess] = useState('');
   const [confirmChecked, setConfirmChecked] = useState(false);
 
-  // ✅ Withdrawal availability (Nigeria time)
+  // Withdrawal availability (Nigeria time)
   const [isWithdrawAvailable, setIsWithdrawAvailable] = useState(false);
 
-  // ✅ Daily Check state
+  // Daily Check state
   const [dailyProgress, setDailyProgress] = useState(0);
   const [dailyDisabled, setDailyDisabled] = useState(false);
   const [dailyMessage, setDailyMessage] = useState('');
   const [dailyLoading, setDailyLoading] = useState(false);
 
-  // ✅ Check withdrawal availability every minute using Nigeria time
+  // Check withdrawal availability every minute using Nigeria time
   useEffect(() => {
     const checkAvailability = () => {
       const now = new Date();
       const nigeriaTime = new Date(now.toLocaleString('en-US', { timeZone: 'Africa/Lagos' }));
       const day = nigeriaTime.getDay();
       const hours = nigeriaTime.getHours();
-
       const isWeekday = day >= 1 && day <= 5;
       const isWithinTime = hours >= 10 && hours < 18;
-
       setIsWithdrawAvailable(isWeekday && isWithinTime);
     };
-
     checkAvailability();
     const interval = setInterval(checkAvailability, 60000);
     return () => clearInterval(interval);
   }, []);
 
-  // ✅ Daily check progress (water‑fill)
+  // Daily check progress (water‑fill)
   useEffect(() => {
     if (!user?.lastDailyCheck) {
       setDailyProgress(1);
       setDailyDisabled(false);
       return;
     }
-
     const last = new Date(user.lastDailyCheck);
     const now = new Date();
     const diff = now.getTime() - last.getTime();
     const elapsedHours = diff / (1000 * 60 * 60);
     const progress = Math.min(elapsedHours / 24, 1);
-
     setDailyProgress(progress);
     setDailyDisabled(progress < 1);
-
     const timer = setInterval(() => {
       const now2 = new Date();
       const diff2 = now2.getTime() - last.getTime();
@@ -83,7 +77,6 @@ const Dashboard: React.FC = () => {
       setDailyProgress(newProgress);
       setDailyDisabled(newProgress < 1);
     }, 60000);
-
     return () => clearInterval(timer);
   }, [user?.lastDailyCheck]);
 
@@ -210,7 +203,7 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  // ✅ Daily Check handler
+  // Daily Check handler
   const handleDailyCheck = async () => {
     if (dailyDisabled) return;
     setDailyLoading(true);
@@ -218,13 +211,12 @@ const Dashboard: React.FC = () => {
     try {
       const res = await api.post('/auth/daily-check');
       setDailyMessage(res.data.message);
-      // Inside handleDailyCheck
-    if (user) {
-      user.balance = res.data.newBalance;
-      user.lastDailyCheck = new Date().toISOString(); // ✅ string
-      setDailyProgress(0);
-      setDailyDisabled(true);
-    }
+      if (user) {
+        user.balance = res.data.newBalance;
+        user.lastDailyCheck = new Date().toISOString();
+        setDailyProgress(0);
+        setDailyDisabled(true);
+      }
       setTimeout(() => setDailyMessage(''), 5000);
     } catch (err: any) {
       setDailyMessage(err.response?.data?.message || 'Failed to claim daily check');
@@ -254,17 +246,7 @@ const Dashboard: React.FC = () => {
   const displayBonusUsed = user?.bonus === 'used' ? 1 : 0;
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-300 pb-20 relative overflow-hidden">
-      {/* Loading Overlay */}
-      {loading && (
-        <div className="fixed inset-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-            <p className="mt-4 text-gray-600 dark:text-gray-400">Loading...</p>
-          </div>
-        </div>
-      )}
-
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-300 relative overflow-hidden">
       {/* Background Video */}
       {theme === 'dark' && (
         <video
@@ -278,27 +260,41 @@ const Dashboard: React.FC = () => {
         />
       )}
 
-      {/* Main Content */}
-      <div className="relative z-10 max-w-md mx-auto px-4 pt-4 pb-24">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-4">
-          <span className="text-sm font-medium text-gray-600 dark:text-gray-400">{currentTime}</span>
-          <div className="flex items-center gap-3">
+      {/* Loading Overlay */}
+      {loading && (
+        <div className="fixed inset-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="text-center">
+            <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+            <p className="mt-4 text-gray-600 dark:text-gray-400">Loading...</p>
+          </div>
+        </div>
+      )}
+
+      {/* ===== STICKY HEADER ===== */}
+      <header className="sticky top-0 z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm shadow-sm">
+        <div className="max-w-md mx-auto px-4 py-3 flex justify-between items-center">
+          <div className="flex items-center gap-2">
             <Link to="/mine" className="flex items-center gap-2 hover:opacity-80 transition">
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{user?.username || 'User'}</span>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {user?.username || 'User'}
+              </span>
               <div className="w-8 h-8 rounded-full bg-orange-200 dark:bg-gray-700 flex items-center justify-center text-sm font-bold text-gray-700 dark:text-gray-200">
                 {user?.username?.charAt(0).toUpperCase() || 'U'}
               </div>
             </Link>
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition text-sm"
-            >
-              {theme === 'light' ? '🌙' : '☀️'}
-            </button>
+            <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">{currentTime}</span>
           </div>
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition text-sm"
+          >
+            {theme === 'light' ? '🌙' : '☀️'}
+          </button>
         </div>
+      </header>
 
+      {/* ===== SCROLLABLE CONTENT ===== */}
+      <div className="relative z-10 max-w-md mx-auto px-4 pt-4 pb-24">
         {/* Banner */}
         <div className="bg-gradient-to-r from-orange-500 to-orange-600 dark:from-orange-600 dark:to-orange-700 rounded-xl p-4 mb-4 text-white">
           <h2 className="text-lg font-bold">AI Work for You while sleeping</h2>
@@ -336,11 +332,8 @@ const Dashboard: React.FC = () => {
               <button
                 onClick={handleDailyCheck}
                 disabled={dailyDisabled || dailyLoading}
-                className={`relative w-full overflow-hidden text-white text-sm font-semibold py-2 rounded-lg transition ${
-                  dailyDisabled ? 'bg-gray-400 cursor-not-allowed' : 'bg-purple-500 hover:bg-purple-600'
-                }`}
+                className={`relative w-full overflow-hidden text-white text-sm font-semibold py-2 rounded-lg transition ${dailyDisabled ? 'bg-gray-400 cursor-not-allowed' : 'bg-purple-500 hover:bg-purple-600'}`}
               >
-                {/* Water-fill progress bar */}
                 <div
                   className="absolute inset-0 bg-blue-400 opacity-30 transition-all duration-1000 ease-linear"
                   style={{ width: `${dailyProgress * 100}%` }}
@@ -357,25 +350,24 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Stats Row */}
-        <div className="grid grid-cols-4 gap-2 mb-4">
-          <div className="bg-white dark:bg-gray-800/90 rounded-lg shadow p-3 text-center transition-colors duration-300 backdrop-blur-sm">
-            <p className="text-xl font-bold text-gray-900 dark:text-white">{displayOrders}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Orders</p>
-          </div>
-          <div className="bg-white dark:bg-gray-800/90 rounded-lg shadow p-3 text-center transition-colors duration-300 backdrop-blur-sm">
-            <p className="text-xl font-bold text-orange-500">₦{displayInvest.toFixed(2)}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Investments</p>
-          </div>
-          <div className="bg-white dark:bg-gray-800/90 rounded-lg shadow p-3 text-center transition-colors duration-300 backdrop-blur-sm">
-            <p className="text-xl font-bold text-gray-900 dark:text-white">{displayReferrals}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Referrals</p>
-          </div>
-          <div className="bg-white dark:bg-gray-800/90 rounded-lg shadow p-3 text-center transition-colors duration-300 backdrop-blur-sm">
-            <p className="text-xl font-bold text-gray-900 dark:text-white">{displayBonusUsed}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Bonus Used</p>
-          </div>
-        </div>
-
+<div className="grid grid-cols-4 gap-2 mb-4">
+  <div className="bg-white dark:bg-gray-800/90 rounded-lg shadow p-3 text-center transition-colors duration-300 backdrop-blur-sm overflow-hidden">
+    <p className="text-xl font-bold text-gray-900 dark:text-white truncate">{displayOrders}</p>
+    <p className="text-xs text-gray-500 dark:text-gray-400">Orders</p>
+  </div>
+  <div className="bg-white dark:bg-gray-800/90 rounded-lg shadow p-3 text-center transition-colors duration-300 backdrop-blur-sm overflow-hidden">
+    <p className="text-xl font-bold text-orange-500 truncate">₦{displayInvest.toFixed(2)}</p>
+    <p className="text-xs text-gray-500 dark:text-gray-400">Investments</p>
+  </div>
+  <div className="bg-white dark:bg-gray-800/90 rounded-lg shadow p-3 text-center transition-colors duration-300 backdrop-blur-sm overflow-hidden">
+    <p className="text-xl font-bold text-gray-900 dark:text-white truncate">{displayReferrals}</p>
+    <p className="text-xs text-gray-500 dark:text-gray-400">Referrals</p>
+  </div>
+  <div className="bg-white dark:bg-gray-800/90 rounded-lg shadow p-3 text-center transition-colors duration-300 backdrop-blur-sm overflow-hidden">
+    <p className="text-xl font-bold text-gray-900 dark:text-white truncate">{displayBonusUsed}</p>
+    <p className="text-xs text-gray-500 dark:text-gray-400">Bonus Used</p>
+  </div>
+</div>
         {/* Investment Plans */}
         <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-3">★ Investment Plans</h3>
         <div className="bg-white dark:bg-gray-800/90 rounded-xl shadow-lg p-3 transition-colors duration-300 backdrop-blur-sm overflow-x-auto">
@@ -404,7 +396,7 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Announcement Modal */}
+      {/* ===== Announcement Modal ===== */}
       {showAnnouncement && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 max-w-md w-full rounded-2xl shadow-2xl p-6 text-center transform transition-all">
@@ -447,7 +439,7 @@ const Dashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Withdrawal Modal (two-step) */}
+      {/* ===== Withdrawal Modal (two-step) ===== */}
       {showWithdraw && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 max-w-md w-full rounded-2xl shadow-2xl p-6 text-center transform transition-all">
@@ -521,16 +513,31 @@ const Dashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800/90 border-t border-gray-200 dark:border-gray-700 transition-colors duration-300 backdrop-blur-sm">
+      {/* ===== FIXED FOOTER ===== */}
+      <footer className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800/90 border-t border-gray-200 dark:border-gray-700 backdrop-blur-sm z-50">
         <div className="max-w-md mx-auto flex justify-around py-2">
-          <Link to="/dashboard" className="flex flex-col items-center text-orange-500"><span className="text-xl">🏠</span><span className="text-xs">Home</span></Link>
-          <button className="flex flex-col items-center text-gray-500 dark:text-gray-400 hover:text-orange-500 transition"><span className="text-xl">📋</span><span className="text-xs">Orders</span></button>
-          <Link to="/history" className="flex flex-col items-center text-gray-500 dark:text-gray-400 hover:text-orange-500 transition"><span className="text-xl">📊</span><span className="text-xs">History</span></Link>
-          <Link to="/task" className="flex flex-col items-center text-gray-500 dark:text-gray-400 hover:text-orange-500 transition"><span className="text-xl">📝</span><span className="text-xs">Task</span></Link>
-          <Link to="/mine" className="flex flex-col items-center text-gray-500 dark:text-gray-400 hover:text-orange-500 transition"><span className="text-xl">👤</span><span className="text-xs">Mine</span></Link>
+          <Link to="/dashboard" className="flex flex-col items-center text-orange-500">
+            <span className="text-xl">🏠</span>
+            <span className="text-xs">Home</span>
+          </Link>
+          <Link to="/orders" className="flex flex-col items-center text-gray-500 dark:text-gray-400 hover:text-orange-500 transition">
+            <span className="text-xl">📋</span>
+            <span className="text-xs">Orders</span>
+          </Link>
+          <Link to="/history" className="flex flex-col items-center text-gray-500 dark:text-gray-400 hover:text-orange-500 transition">
+            <span className="text-xl">📊</span>
+            <span className="text-xs">History</span>
+          </Link>
+          <Link to="/task" className="flex flex-col items-center text-gray-500 dark:text-gray-400 hover:text-orange-500 transition">
+            <span className="text-xl">📝</span>
+            <span className="text-xs">Task</span>
+          </Link>
+          <Link to="/mine" className="flex flex-col items-center text-gray-500 dark:text-gray-400 hover:text-orange-500 transition">
+            <span className="text-xl">👤</span>
+            <span className="text-xs">Mine</span>
+          </Link>
         </div>
-      </div>
+      </footer>
     </div>
   );
 };

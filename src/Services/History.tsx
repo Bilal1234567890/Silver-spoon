@@ -10,7 +10,12 @@ interface DepositItem {
   amount: number;
   type: string;
   description: string;
+  status?: 'pending' | 'verified' | 'rejected'; // ✅ added 'rejected'
   createdAt: string;
+  // Optional sender fields
+  senderBank?: string;
+  senderAccountNumber?: string;
+  senderAccountName?: string;
 }
 
 interface WithdrawalItem {
@@ -22,11 +27,11 @@ interface WithdrawalItem {
   createdAt: string;
 }
 
-// ✅ Helper to display user-friendly status
+// ✅ Helper to display status
 const getStatusDisplay = (status: string): { label: string; color: string } => {
   switch (status) {
-    case 'approved':
-      return { label: 'SUCCESSFUL', color: 'text-green-600' };
+    case 'verified':
+      return { label: 'VERIFIED', color: 'text-green-600' };
     case 'rejected':
       return { label: 'REJECTED', color: 'text-red-600' };
     case 'pending':
@@ -72,7 +77,6 @@ const History: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-300 pb-20 relative overflow-hidden">
-      {/* Background Video */}
       {theme === 'dark' && (
         <video
           src={backgroundVideo}
@@ -84,39 +88,51 @@ const History: React.FC = () => {
         />
       )}
 
-      <div className="relative z-10 max-w-md mx-auto px-4 pt-4 pb-24">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold font-fraunces text-gray-800 dark:text-gray-100">Transaction History</h1>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition text-sm"
-            >
-              {theme === 'light' ? '🌙' : '☀️'}
-            </button>
-          </div>
+      <header className="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm shadow-sm">
+        <div className="max-w-md mx-auto px-4 py-3 flex justify-between items-center">
+          <h1 className="text-xl font-bold font-fraunces text-gray-800 dark:text-gray-100">Transaction History</h1>
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition text-sm"
+          >
+            {theme === 'light' ? '🌙' : '☀️'}
+          </button>
         </div>
+      </header>
 
+      <div className="relative z-10 max-w-md mx-auto px-4 pt-4 pb-24">
         {/* Deposits */}
         {deposits.length > 0 && (
           <div className="mb-6">
             <h2 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-3">Deposits</h2>
-            {deposits.map((dep) => (
-              <div key={dep.id} className="bg-white dark:bg-gray-800/90 rounded-xl shadow-lg p-4 mb-3 backdrop-blur-sm">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="font-semibold text-gray-800 dark:text-gray-100">
-                      +₦{Number(dep.amount).toFixed(2)}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{dep.description || dep.type}</p>
+            {deposits.map((dep) => {
+              const statusInfo = dep.status ? getStatusDisplay(dep.status) : null;
+              return (
+                <div key={dep.id} className="bg-white dark:bg-gray-800/90 rounded-xl shadow-lg p-4 mb-3 backdrop-blur-sm">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="font-semibold text-gray-800 dark:text-gray-100">
+                        +₦{Number(dep.amount).toFixed(2)}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{dep.description || dep.type}</p>
+                      {dep.type === 'deposit' && dep.status && (
+                        <span className={`text-xs font-medium ${statusInfo?.color}`}>
+                          {statusInfo?.label}
+                        </span>
+                      )}
+                      {dep.senderBank && (
+                        <p className="text-xs text-gray-400 mt-1">
+                          From: {dep.senderBank} • {dep.senderAccountNumber} • {dep.senderAccountName}
+                        </p>
+                      )}
+                    </div>
+                    <span className="text-xs text-gray-400">
+                      {new Date(dep.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    </span>
                   </div>
-                  <span className="text-xs text-gray-400">
-                    {new Date(dep.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                  </span>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
@@ -157,31 +173,25 @@ const History: React.FC = () => {
         )}
       </div>
 
-      {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800/90 border-t border-gray-200 dark:border-gray-700 transition-colors duration-300 backdrop-blur-sm">
+      <footer className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800/90 border-t border-gray-200 dark:border-gray-700 backdrop-blur-sm z-50">
         <div className="max-w-md mx-auto flex justify-around py-2">
           <Link to="/dashboard" className="flex flex-col items-center text-gray-500 dark:text-gray-400 hover:text-orange-500 transition">
-            <span className="text-xl">🏠</span>
-            <span className="text-xs">Home</span>
+            <span className="text-xl">🏠</span><span className="text-xs">Home</span>
           </Link>
-          <button className="flex flex-col items-center text-gray-500 dark:text-gray-400 hover:text-orange-500 transition">
-            <span className="text-xl">📋</span>
-            <span className="text-xs">Orders</span>
-          </button>
+          <Link to="/orders" className="flex flex-col items-center text-gray-500 dark:text-gray-400 hover:text-orange-500 transition">
+            <span className="text-xl">📋</span><span className="text-xs">Orders</span>
+          </Link>
           <Link to="/history" className="flex flex-col items-center text-orange-500">
-            <span className="text-xl">📊</span>
-            <span className="text-xs">History</span>
+            <span className="text-xl">📊</span><span className="text-xs">History</span>
           </Link>
           <Link to="/task" className="flex flex-col items-center text-gray-500 dark:text-gray-400 hover:text-orange-500 transition">
-            <span className="text-xl">📝</span>
-            <span className="text-xs">Task</span>
+            <span className="text-xl">📝</span><span className="text-xs">Task</span>
           </Link>
           <Link to="/mine" className="flex flex-col items-center text-gray-500 dark:text-gray-400 hover:text-orange-500 transition">
-            <span className="text-xl">👤</span>
-            <span className="text-xs">Mine</span>
+            <span className="text-xl">👤</span><span className="text-xs">Mine</span>
           </Link>
         </div>
-      </div>
+      </footer>
     </div>
   );
 };
