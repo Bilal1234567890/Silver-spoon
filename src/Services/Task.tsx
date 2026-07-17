@@ -349,20 +349,34 @@ const Task: React.FC = () => {
         </div>
       )}
 
-      {/* ===== INSUFFICIENT BALANCE MODAL ===== */}
+      {/* ===== INSUFFICIENT BALANCE MODAL (updated) ===== */}
       {showInsufficient && selectedPlan && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 max-w-md w-full rounded-2xl shadow-2xl p-6 text-center">
             <h3 className="text-xl font-bold font-fraunces text-gray-800 dark:text-gray-100">Insufficient Balance</h3>
             <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
-              You need ₦{selectedPlan.amount.toLocaleString()} to buy this plan. You have ₦{Number(user?.balance || 0).toFixed(2)}.
+              You need ₦{selectedPlan.amount.toLocaleString()} to buy this plan. 
             </p>
-            <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">Please top up ₦{topUpAmount.toFixed(2)} to proceed.</p>
-            <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg mt-4 text-left">
-              <p><strong>Bank:</strong> Access Bank</p>
-              <p><strong>Account Number:</strong> 0123456789</p>
-              <p><strong>Account Name:</strong> SILVER SPOON INVESTMENT</p>
+            
+
+            {/* Bank details – label left, value right */}
+            <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg mt-4">
+              <div className="flex justify-between items-center py-1">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Bank:</span>
+                <span className="text-sm text-gray-900 dark:text-gray-100">OPAY</span>
+              </div>
+              <div className="flex justify-between items-center py-1 border-t border-gray-200 dark:border-gray-600">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Account Number:</span>
+                <span className="text-sm text-gray-900 dark:text-gray-100">644-8110-830</span>
+              </div>
+              <div className="flex justify-between items-center py-1 border-t border-gray-200 dark:border-gray-600">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Account Name:</span>
+                <span className="text-sm text-gray-900 dark:text-gray-100">BSM Alpha-Tech Hub</span>
+              </div>
             </div>
+            You have ₦{Number(user?.balance || 0).toFixed(2)}.
+            <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">Please top up ₦{topUpAmount.toFixed(2)} to proceed.</p>
+
             <button
               className="mt-4 w-full bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg transition"
               onClick={() => {

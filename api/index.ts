@@ -38,8 +38,8 @@ connectDB()
         where: { email: 'admin@silverspoon.com' },
         defaults: {
           email: 'admin@silverspoon.com',
-          phone1: '08168581884',
-          phone2: '08109723950',
+          phone1: '080829911',
+          phone2: '08064604280',
         },
       });
       if (created) console.log('✅ Default admin created');

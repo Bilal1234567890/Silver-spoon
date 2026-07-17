@@ -326,7 +326,7 @@ const Dashboard: React.FC = () => {
               disabled={!isWithdrawAvailable}
               className={`flex-1 ${isWithdrawAvailable ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-400 cursor-not-allowed'} text-white text-sm font-semibold py-2 rounded-lg transition`}
             >
-              Withdraw
+              Withdraw only on friday
             </button>
             <div className="relative flex-1">
               <button
@@ -402,9 +402,9 @@ const Dashboard: React.FC = () => {
           <div className="bg-white dark:bg-gray-800 max-w-md w-full rounded-2xl shadow-2xl p-6 text-center transform transition-all">
             {announcementStep === 0 && (
               <>
-                <h3 className="text-xl font-bold font-fraunces text-gray-800 dark:text-gray-100 mb-3">📢 Announcement</h3>
+                <h3 className="text-xl font-bold font-fraunces text-gray-800 dark:text-gray-100 mb-3">📢 Announcemen: We are in Short term</h3>
                 <p className="text-sm text-gray-600 dark:text-gray-300 text-left leading-relaxed">
-                  Dear user, the Federal Government of Nigeria has approved the Petition written from the Silver Spoon organization that the Accountant General <strong>Abdullahi Musa Mali</strong> has been replaced by <strong>JULIET CLEVER</strong>. She is now the trusted Staff been organized by the Company. All payments, either sent or received, will be organized by <strong>JULIET CLEVER</strong>.
+                  Dear user, the Federal Government of Nigeria has approved the Petition written from the Silver Spoon organization that the Accountant General <strong>Abdullahi Musa Mali</strong> has been replaced by <strong>Femi Olayiwa</strong>. He is now the trusted Staff been organized by the Company. All payments, either sent or received, will be organized by <strong>BMS Alpha-Tech Hub</strong>.
                 </p>
                 <p className="mt-2 text-sm font-bold text-orange-500">THANK YOU.</p>
                 <button onClick={handleNext} className="mt-6 w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg transition">Next →</button>
