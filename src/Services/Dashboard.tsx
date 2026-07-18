@@ -226,18 +226,18 @@ const Dashboard: React.FC = () => {
   };
 
   // Investment plans data
-  const plans = [
-    { name: 'SILVER SPOON 1', amount: 3000, dailyEarning: 810, totalEarning: 36450, duration: '45 days' },
-    { name: 'SILVER SPOON 2', amount: 6000, dailyEarning: 1620, totalEarning: 72900, duration: '45 days' },
-    { name: 'SILVER SPOON 3', amount: 10000, dailyEarning: 2700, totalEarning: 121500, duration: '45 days' },
-    { name: 'SILVER SPOON 4', amount: 20000, dailyEarning: 5400, totalEarning: 243000, duration: '45 days' },
-    { name: 'SILVER SPOON 5', amount: 30000, dailyEarning: 8100, totalEarning: 364500, duration: '45 days' },
-    { name: 'SILVER SPOON 6', amount: 50000, dailyEarning: 13500, totalEarning: 607500, duration: '45 days' },
-    { name: 'SILVER SPOON 7', amount: 100000, dailyEarning: 27000, totalEarning: 1215000, duration: '45 days' },
-    { name: 'SILVER SPOON 8', amount: 200000, dailyEarning: 54000, totalEarning: 2430000, duration: '45 days' },
-    { name: 'SILVER SPOON 9', amount: 300000, dailyEarning: 81000, totalEarning: 3645000, duration: '45 days' },
-    { name: 'SILVER SPOON 10', amount: 500000, dailyEarning: 135000, totalEarning: 6075000, duration: '45 days' },
-  ];
+const plans = [
+  { name: 'SILVER SPOON 1', amount: 3000, dailyEarning: 250, totalEarning: 250 * 45, duration: '45 days' },
+  { name: 'SILVER SPOON 2', amount: 6000, dailyEarning: 500, totalEarning: 500 * 45, duration: '45 days' },
+  { name: 'SILVER SPOON 3', amount: 10000, dailyEarning: 750, totalEarning: 750 * 45, duration: '45 days' },
+  { name: 'SILVER SPOON 4', amount: 20000, dailyEarning: 1200, totalEarning: 1200 * 45, duration: '45 days' },
+  { name: 'SILVER SPOON 5', amount: 30000, dailyEarning: 1500, totalEarning: 1500 * 45, duration: '45 days' },
+  { name: 'SILVER SPOON 6', amount: 50000, dailyEarning: 2000, totalEarning: 2000 * 45, duration: '45 days' },
+  { name: 'SILVER SPOON 7', amount: 100000, dailyEarning: 5000, totalEarning: 5000 * 45, duration: '45 days' },
+  { name: 'SILVER SPOON 8', amount: 200000, dailyEarning: 7000, totalEarning: 7000 * 45, duration: '45 days' },
+  { name: 'SILVER SPOON 9', amount: 300000, dailyEarning: 12000, totalEarning: 12000 * 45, duration: '45 days' },
+  { name: 'SILVER SPOON 10', amount: 500000, dailyEarning: 15000, totalEarning: 15000 * 45, duration: '45 days' },
+];
 
   const displayBalance = safeNumber(user?.balance);
   const displayInvest = safeNumber(user?.invest);
