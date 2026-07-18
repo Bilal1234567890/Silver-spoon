@@ -333,13 +333,21 @@ const Mine: React.FC = () => {
         {/* Action Buttons */}
         <div className="space-y-3">
         
+        <a
+            href="https://chat.whatsapp.com/IN4gECvkcJmF3hs6QCX61q?s=cl&p=a&mlu=0&ilr=0"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full bg-white dark:bg-gray-800/90 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 font-semibold py-3 rounded-lg shadow transition backdrop-blur-sm flex items-center justify-center"
+          >
+            📞 WhatsApp Group
+          </a>
           <a
             href="https://chat.whatsapp.com/EJwPU62uuL00GdYLQeiyEQ?s=cl&p=a&ilr=0&amv=3"
             target="_blank"
             rel="noopener noreferrer"
             className="w-full bg-white dark:bg-gray-800/90 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 font-semibold py-3 rounded-lg shadow transition backdrop-blur-sm flex items-center justify-center"
           >
-            📞 WhatsApp
+            📞 Feedback on WhatsApp
           </a>
           <a
             href="https://x.com/BREAK_CHART"
